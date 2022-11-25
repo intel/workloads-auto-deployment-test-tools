@@ -1,0 +1,5 @@
+vault server -dev
+export VAULT_ADDR='http://127.0.0.1:8200'
+copy Unseal Key & Root Token
+vault status
+vault secrets enable -version=2 kv

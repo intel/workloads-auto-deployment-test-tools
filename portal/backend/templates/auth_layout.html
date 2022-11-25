@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block style %}
+    <style>
+        .auth-box {
+            border: 3px solid lightgrey;
+            border-radius: 4px;
+            padding-top: 25px;
+            padding-bottom: 25px;
+            width: 600px;
+            margin: auto;
+        }
+        .login-form-container {
+            width: 300px;
+            margin: auto;
+        }
+        .btn-block {
+            display: block;
+            text-align: center;
+            width: 100%;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="auth-box mt-4">
+        {% block auth %}
+        {% endblock %}
+    </div>
+{% endblock %}

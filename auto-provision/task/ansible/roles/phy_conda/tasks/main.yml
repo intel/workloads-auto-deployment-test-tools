@@ -1,0 +1,23 @@
+---
+- name: Update conda
+  conda:
+    name: conda
+    state: latest
+    executable: /opt/conda/bin/conda
+- name: Create a conda environment
+  conda:
+    name: python
+    version: 3.8
+    environment: python3
+    state: present
+- name: Install some packages in the environment
+  conda:
+    name:
+      - pandas
+      - numpy
+      - tensorflow
+    environment: python3
+- name: Install R, using a versioned name
+  conda:
+    name: r-base=3.8.0
+

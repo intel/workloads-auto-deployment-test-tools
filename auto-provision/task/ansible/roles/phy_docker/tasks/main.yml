@@ -1,0 +1,24 @@
+---
+# tasks file for phy_docker
+- name: Create a directory if it does not exist
+  file:
+    path: "{{ deployDir }}/docker"
+    state: directory
+
+- name: copy files from local to remote
+  copy:
+    src: files/
+    dest: "{{ deployDir }}/docker"
+
+- name: config docker proxy
+  template:
+    src: templates/config_docker_proxy.sh
+    dest: "{{ deployDir }}/docker/config_docker_proxy.sh"
+
+- name: install docker
+  shell: cd "{{ deployDir }}/docker";chmod +x *.sh ; ./start.sh
+  register: shell_result
+
+- debug:
+    msg: "{{shell_result.stdout_lines}}"
+

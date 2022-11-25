@@ -1,0 +1,6 @@
+id,name,component_type,default_version,created,modified
+5,k8s,execution,,2022-07-08 13:41:14,2022-07-08 13:41:14
+4,vm,external,,2022-07-08 13:41:14,2022-07-08 13:41:14
+3,common,execution,,2022-07-08 13:41:14,2022-07-08 13:41:14
+2,kernel,system,,2022-07-08 13:41:14,2022-07-08 13:41:14
+1,bios,system,,2022-07-08 13:41:14,2022-07-08 13:41:14

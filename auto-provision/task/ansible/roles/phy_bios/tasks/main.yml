@@ -1,0 +1,26 @@
+---
+# tasks file for phy_bios
+- name: Create a directory if it does not exist
+  file:
+    path: "{{ deployDir }}/bios"
+    state: directory
+
+- name: copy files from local to remote
+  copy:
+    src: files/
+    dest: "{{ deployDir }}/bios"
+
+- name: get the username running the deploy
+  become: false
+  local_action: command whoami
+  register: username_on_the_host
+
+- name: update bios
+  shell: cd "{{ deployDir }}/bios";chmod +x *.sh ; ./start.sh
+  register: shell_result
+
+- debug:
+    msg: "{{shell_result.stdout_lines}}"
+
+- debug:
+    msg: "{{username_on_the_host}}"

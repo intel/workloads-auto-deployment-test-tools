@@ -1,0 +1,65 @@
+{
+  "deployHost": [
+    {
+      "name": "controller",
+      "ansible_host": "10.67.121.80",
+      "ip": "10.67.121.80",
+      "username": "xianglingyu",
+      "hostname": "wie.baohan.network.001.cn",
+      "password": "Password123!"
+    },
+    {
+      "name": "node1",
+      "ansible_host": "10.67.121.81",
+      "ip": "10.67.121.81",
+      "username": "xianglingyu",
+      "hostname": "wie.baohan.network.002.cn",
+      "password": "Password123!"
+    }
+  ],
+  "platforms": "SPR",
+  "kubernetes_deploy": "false",
+  "kubernetesInstallMethod": "",
+  "kubernetesArgs": {
+    "kube_version": "",
+    "kube_network_plugin": "",
+    "container_manager": "",
+    "dashboard_enabled": "false",
+    "helm_enabled": "false",
+    "registry_enabled": "false",
+    "ingress_nginx_enabled": "false",
+    "ingress_nginx_host_network": "false",
+    "krew_enabled": "false"
+  },
+  "jenkins": "false",
+  "workloadName": "DLB-DPDK",
+  "jsf_repo": "https://github.com/intel-innersource/applications.benchmarking.benchmark.platform-hero-features",
+  "commit": "master",
+  "registry": "10.166.44.56:5000",
+  "filter_case": "",
+  "softwarepackage": "true",
+  "softwarepackageArgs": [
+    {
+      "Name": "DPDK",
+      "scriptArgs": "-n 100000"
+    }
+  ],
+  "system_deploy": "true",
+  "Kernel_update": "false",
+  "kernelVersion": "",
+  "kernelArgs_update": "true",
+  "kernelArgs": "hugepagesz=1G hugepagesz=1G hugepages=16",
+  "vm_deploy": "false",
+  "vm_docker": "",
+  "vmosArgs": {
+    "osNumber": "",
+    "osType": "",
+    "vmName": "",
+    "memory": "",
+    "cpuNumber": "",
+    "disk": ""
+  },
+  "sender": "minghui1x.li@intel.com",
+  "receivers": "minghui1x.li@intel.com",
+  "jobId": "207"
+}

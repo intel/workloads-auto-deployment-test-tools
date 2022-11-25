@@ -1,0 +1,48 @@
+version: "3.7"
+
+services:
+  jenkins:
+    container_name: jenkins
+    build:
+      context: .
+      dockerfile: ./Dockerfile.jenkins
+    volumes:
+      - jenkins_home:/var/jenkins_home/:rw
+    restart: "always"
+    ports:
+      - "8080:8080"
+    networks:
+      - main
+  registory:
+    container_name: registory
+    image: registry:2
+    privileged: true
+    volumes:
+      - registry_home:/var/lib/registry
+    restart: "always"
+    ports:
+      - "5000:5000"
+    environment:
+      - "REGISTRY_STORAGE_DELETE_ENABLED=true"
+    networks:
+      - main
+  jfrog:
+    container_name: jfrog
+    image: docker.bintray.io/jfrog/artifactory-oss
+    privileged: true
+    volumes:
+      - jfrog_var:/var
+    restart: "always"
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+    networks:
+      - main
+volumes:
+  jenkins_home:
+  registry_home:
+  jfrog_var:
+
+networks:
+  main:
+    driver: bridge

@@ -1,0 +1,34 @@
+1. go to WSF-VaaS/auto-provision/apisvc/cert/ and remove cert.pem and key.pem if exists
+
+2. Run "hostname -f" to get full hostname
+
+3. run "./generate_cert -host=<hostname in step 2> -ecdsa-curve=P384", 2 files cert.pem and key.pem are generated
+
+4. copy cert.pem file to WSF-VaaS/portal/backend/cert/
+
+5. Add certificate to operation system
+On CentOS system
+-----------------------------------------------------------------------------------------
+find the cert.pem contant
+cat WSF-VaaS/portal/backend/cert/cert.pem
+
+-----BEGIN CERTIFICATE-----
+MIIBpjCCASygAwIBAgIRAIpZzafq4HJYsJN20YlCH6QwCgYIKoZIzj0EAwMwEjEQ
+MA4GA1UEChMHQWNtZSBDbzAeFw0yMjA4MTYwNjQzMzZaFw0yMzA4MTYwNjQzMzZa
+MBIxEDAOBgNVBAoTB0FjbWUgQ28wdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQzVpHZ
+2lJSOEcCWuly+g3JYOnlg2UrlhyKVeACFXoSE/y5uEHIVPCd0ZZI/Yv2h2bQS1mX
+KVnOy26Sq2EPVcrrCfG+WCn7cw1tFpU9RLzRb0DA0QI4M6sXHf85b7wAE1KjRjBE
+MA4GA1UdDwEB/wQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDATAMBgNVHRMBAf8E
+AjAAMA8GA1UdEQQIMAaHBAqmISIwCgYIKoZIzj0EAwMDaAAwZQIxAPe+jtgtyr8+
+HoJolHZDazEP7vCkl9xyWyCAdwfQ/fA4iu1Hq3IaO9viePHu5e5OTAIwC25pG5dE
+2x/t5qba4/DKC8o9jU2LcEQG5JfjMwl5E3Xqc2x8TLGme+HHcXAYRx4+
+-----END CERTIFICATE-----
+
+append this contant to /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+-----------------------------------------------------------------------------------------
+
+On Ubuntu system
+-----------------------------------------------------------------------------------------
+copy cert.pem to /usr/local/share/ca-certificates/ and rename to cert.crt
+run update-ca-certificates
+-----------------------------------------------------------------------------------------

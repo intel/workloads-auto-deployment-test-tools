@@ -1,0 +1,4 @@
+- hosts: node
+  become: yes
+  roles:
+    - phy_kernelargs

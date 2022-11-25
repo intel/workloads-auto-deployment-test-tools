@@ -1,0 +1,199 @@
+{
+    "title": "config json schema",
+    "description": "test if config json has correct schema",
+    "type": "object",
+    "properties": {
+        "deployHost": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "ansible_host": {
+                        "type": "string",
+                        "format": "ipv4"
+                    },
+                    "ip": {
+                        "type": "string",
+                        "format": "ipv4"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "hostname": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name", "ansible_host", "ip", "username", "hostname", "password"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "platforms": {
+            "type": "string",
+            "enum": ["ICX", "SPR"]
+        },
+        "kubernetes_deploy": {
+            "type": "string",
+            "enum": ["true", "false"]
+        },
+        "kubernetesInstallMethod": {
+            "type": "string",
+            "enum": ["", "host", "vm", "docker"]
+        },
+        "kubernetesArgs": {
+            "type": "object",
+            "properties": {
+                "kube_version": {
+                    "type": "string"
+                },
+                "kube_network_plugin": {
+                    "type": "string",
+                    "enum": ["", "cilium", "calico", "weave", "flannel"]
+                },
+                "container_manager": {
+                    "type": "string",
+                    "enum": ["", "docker", "crio", "containerd"]
+                },
+                "dashboard_enabled": {
+                    "type": "string",
+                    "enum": ["true", "false"]
+                },
+                "helm_enabled": {
+                    "type": "string",
+                    "enum": ["true", "false"]
+                },
+                "registry_enabled": {
+                    "type": "string",
+                    "enum": ["true", "false"]
+                },
+                "ingress_nginx_enabled": {
+                    "type": "string",
+                    "enum": ["true", "false"]
+                },
+                "ingress_nginx_host_network": {
+                    "type": "string",
+                    "enum": ["true", "false"]
+                },
+                "krew_enabled": {
+                    "type": "string",
+                    "enum": ["true", "false"]
+                }
+            },
+            "required": [
+                 "kube_version", "kube_network_plugin", "container_manager", "dashboard_enabled", "helm_enabled", "registry_enabled", "ingress_nginx_enabled", "ingress_nginx_host_network", "krew_enabled"
+            ],
+            "additionalProperties": false
+        },
+        "jenkins": {
+            "type": "string",
+            "enum": ["true", "false"]
+        },
+        "workloadName": {
+            "type": "string"
+        },
+        "jsf_repo": {
+            "type": "string"
+        },
+        "commit": {
+            "type": "string"
+        },
+        "registry": {
+            "type": "string"
+        },
+        "filter_case": {
+            "type": "string"
+        },
+        "softwarepackage": {
+            "type": "string",
+            "enum": ["true", "false"]
+        },
+        "softwarepackageArgs": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "Name": {
+                        "type": "string"
+                    },
+                    "scriptArgs": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "system_deploy": {
+            "type": "string",
+            "enum": ["true", "false"]
+        },
+        "Kernel_update": {
+            "type": "string",
+            "enum": ["true", "false"]
+        },
+        "kernelVersion": {
+            "type": "string"
+        },
+        "kernelArgs_update": {
+            "type": "string",
+            "enum": ["true", "false"]
+        },
+        "kernelArgs": {
+            "type": "string"
+        },
+        "vm_deploy": {
+            "type": "string",
+            "enum": ["true", "false"]
+        },
+        "vm_docker": {
+            "type": "string",
+            "enum": ["", "true", "false"]
+        },
+        "vmosArgs": {
+            "type": "object",
+            "properties": {
+                "osNumber": {
+                    "type": "string"
+                },
+                "osType": {
+                    "type": "string"
+                },
+                "vmName": {
+                    "type": "string"
+                },
+                "memory": {
+                    "type": "string"
+                },
+                "cpuNumber": {
+                    "type": "string"
+                },
+                "disk": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "osNumber", "osType", "vmName", "memory", "cpuNumber", "disk"
+           ],
+           "additionalProperties": false
+        },
+        "sender": {
+            "type": "string",
+            "format": "email"
+        },
+        "receivers": {
+            "type": "string",
+            "format": "email"
+        }
+    },
+    "required": [
+        "deployHost", "platforms", "kubernetes_deploy", "kubernetesInstallMethod", "kubernetesArgs", "jenkins", "workloadName", "jsf_repo", "commit", "registry", "filter_case",
+        "softwarepackage", "softwarepackageArgs", "system_deploy", "Kernel_update", "kernelVersion", "kernelArgs_update", "kernelArgs", "vm_deploy", "vm_docker", "vmosArgs", "sender", "receivers"
+   ],
+   "additionalProperties": false
+}

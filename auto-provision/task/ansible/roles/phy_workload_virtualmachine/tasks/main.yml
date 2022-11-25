@@ -1,0 +1,13 @@
+---
+# tasks file for phy_virtualmachine
+- name: Create a directory if it does not exist
+  file:
+    path: "{{ deployDir }}/workload_virtualmachine"
+    state: directory
+
+- name: copy files from local to remote
+  copy:
+    src: files/
+    dest: "{{ deployDir }}/workload_virtualmachine"
+- name: create virtual machine
+  shell: cd "{{ deployDir }}/workload_virtualmachine";chmod +x *.sh ; ./start.sh

@@ -1,0 +1,20 @@
+{% extends 'auth_layout.html' %}
+{% load crispy_forms_tags %}
+
+{% block auth %}
+    <h2 class="text-center">Wie TaaS</h1>
+    <div class="login-form-container">
+        <form method="POST">
+            {% csrf_token %}
+            {{ form | crispy }}
+            <button
+                type="submit"
+                class="btn btn-sm btn-primary btn-block"
+            >Login</button>
+        </form>
+        <p class="mt-2 text-center">
+            Please use your <strong>NT account</strong> to login.
+            Or let admin to create an account for you.
+        </p>
+    </div>
+{% endblock %}

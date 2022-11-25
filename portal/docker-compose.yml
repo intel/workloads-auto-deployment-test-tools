@@ -1,0 +1,64 @@
+version: "3.7"
+
+services:
+  db:
+    container_name: postgres
+    image: postgres:11-alpine
+    networks:
+      - main
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./backend/data/taas_db_init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgresql-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: '#1Danger0us'
+      POSTGRES_DB: 'taas'
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+    networks:
+      - main
+    ports:
+      - "8079:8080"
+    volumes:
+      - ./frontend:/frontend/:rw
+      - /frontend/node_modules
+    depends_on:
+      - backend
+      - db
+    restart: "no"
+    read_only: true
+
+  backend:
+    container_name: backend
+    build:
+      context: ./backend
+    command: sh -c "./start_dev_docker.sh"
+    environment:
+      DJANGO_SETTINGS_MODULE: taas.settings_dev_docker
+      VAULT_ADDR: "http://10.166.33.34:8200"
+      VAULT_TOKEN: "hvs.byBLyKR8R0Sgt5mynxxwRi5A"
+    read_only: true
+    volumes:
+      - ./frontend:/frontend:rw
+      - ./backend:/backend:rw
+      - static:/backend/static
+      - /root/.aws:/root/.aws
+    ports:
+      - "8899:8899"
+    networks:
+      - main
+    depends_on:
+      - db
+
+volumes:
+  static:
+  postgresql-data:
+
+networks:
+  main:
+    driver: bridge

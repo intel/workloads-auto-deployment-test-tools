@@ -1,0 +1,18 @@
+---
+# tasks file for phy_kernelargs
+- name: Create a directory if it does not exist
+  file:
+    path: "{{ deployDir }}/kernel_args"
+    state: directory
+
+- name: copy files from local to remote
+  copy:
+    src: files/
+    dest: "{{ deployDir }}/kernel_args"
+
+- name: update kernel
+  shell: cd "{{ deployDir }}/kernel_args";chmod +x *.sh ; ./update_kernel_args.sh
+  register: shell_result
+
+- debug:
+    msg: "{{shell_result.stdout_lines}}"

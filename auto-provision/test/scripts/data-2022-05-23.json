@@ -1,0 +1,84 @@
+{
+  "jobId": "703",
+  "deployHost": [
+    {
+      "name": "controller1",
+      "ansible_host": "10.67.115.171",
+      "ip": "10.67.115.171",
+      "username": "root",
+      "hostname": "see-prc-renlefu-ci-pwek-server-2",
+      "password": "Intel123."
+    },
+    {
+      "name": "node1",
+      "ansible_host": "10.67.115.172",
+      "ip": "10.67.115.172",
+      "username": "root",
+      "hostname": "node-prc-renlefu-ci-pwek-server-2",
+      "password": "Intel123."
+    },
+    {
+      "name": "node1",
+      "ansible_host": "10.67.115.172",
+      "ip": "10.67.115.172",
+      "username": "root",
+      "hostname": "node-prc-renlefu-ci-pwek-server-2",
+      "password": "Intel123."
+    }
+  ],
+  "kubernetes_deploy": "true",
+  "kubernetesInstallMethod": "default",
+  "kubernetesArgs": {
+    "kube_version": "1.23.5",
+    "kube_network_plugin": "calico",
+    "container_manager": "docker",
+    "dashboard_enabled": "true",
+    "helm_enabled": "true",
+    "registry_enabled": "true",
+    "ingress_nginx_enabled": "true",
+    "ingress_nginx_host_network": "true",
+    "krew_enabled": "true"
+  },
+  "jenkins": "true",
+  "workloadName": "Stream",
+  "jsf_repo": "xxx.git",
+  "commit": "master",
+  "filter_case": "filter regular expression",
+  "registry": "10.166.44.134:5000",
+  "platforms": "ICX",
+  "softwarepackage": "false",
+  "softwarepackageArgs": [
+    {
+      "name": "streamPackage",
+      "scriptArgs": "commandArgs"
+    },
+    {
+      "name": "streamPackage",
+      "scriptArgs": "command 2"
+    }
+  ],
+  "system_deploy": "false",
+  "os_update": "false",
+  "os": "ubuntu2004",
+  "Kernel_update": "false",
+  "kernelVersion": "5.8",
+  "kernelArgs_update": "false",
+  "kernelArgs": "default",
+  "bios_update": "false",
+  "bios_args": [
+    "args1",
+    "args2"
+  ],
+  "vm_deploy": "true",
+  "vm_docker": "true",
+  "vmosArgs": {
+    "osNumber": "520",
+    "osType": "centos7",
+    "vmName": "w",
+    "memory": "80960",
+    "cpuNumber": "4",
+    "disk": "25"
+  },
+  "sender": "shichengx.li@intel.com",
+  "receivers": "renlex.fu@intel.com,owen.zhang@intel.com"
+}

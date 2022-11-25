@@ -1,0 +1,5 @@
+- hosts: node
+  user: root
+  become: yes
+  roles:
+    - phy_conda
