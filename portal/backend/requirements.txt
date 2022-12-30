@@ -13,7 +13,7 @@ coreschema==0.0.4
 cryptography==37.0.2
 defusedxml==0.7.1
 diff-match-patch==20200713
-Django==3.2.15
+Django==3.2.16
 django-allauth==0.47.0
 django-crispy-forms==1.13.0
 django-extensions==3.0.9
