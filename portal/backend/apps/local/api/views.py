@@ -18,6 +18,7 @@ import json
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from local.models import LocalSetting
+from pathlib import Path
 
 LOGGER = logging.getLogger(__name__)
 
@@ -107,6 +108,8 @@ class ProvisionAPIView(generics.CreateAPIView):
             provision_server_url = LocalSetting.objects.get(name='provision_server_url').value
             provision_server_url = f"{provision_server_url}/conf/createconf"
             print(self.request.data)
+            if Path("apps/local/api/config_schema.json").is_symlink():
+                raise Exception("This application refuse to proceed file that is symlink")
             with open("apps/local/api/config_schema.json", "r") as f:
                 config_schema = json.load(f)
             try:
@@ -211,7 +214,7 @@ class ProvisionLogAPIView(generics.ListAPIView):
             log_file_path = f'workspace/local/logs/{job_id}_provision.log'
             headers = vault.setHeaders()
             data = ""
-            data = requests.post(provision_server_url, headers=headers, verify=False)
+            data = requests.post(provision_server_url, headers=headers, verify="/backend/cert/cert.pem")
             a = json.loads(data.content)
             # print(a["logContent"])
             if os.path.exists(log_file_path):
@@ -219,6 +222,8 @@ class ProvisionLogAPIView(generics.ListAPIView):
             fd = open(log_file_path, 'w') 
             fd.write(a["logContent"])
             fd.close()
+            if Path(log_file_path).is_symlink():
+                return [{"data": "This application refuse to proceed file that is symlink"}]
             fd = open(log_file_path, 'r')
             content = fd.read()
             fd.close()
@@ -254,6 +259,9 @@ class ProvisionInQueueAPIView(generics.CreateAPIView):
                     if job.start_time < timezone.now() and job.end_time > timezone.now():
                         print(f"Trigger job: {job.id}")
                         config_file_path = f'workspace/local/logs/{job.id}_config.json'
+                        if Path(config_file_path).is_symlink():
+                            return Response("This application refuse to proceed file that is symlink",
+                            status=status.HTTP_400_BAD_REQUEST)
                         fd = open(config_file_path, 'r')
                         config = fd.read()
                         fd.close()
@@ -263,7 +271,7 @@ class ProvisionInQueueAPIView(generics.CreateAPIView):
                             machine.status = "IN_USE"
                             machine.user = job.user
                             machine.save()
-                        requests.post(provision_server_url, data=config, headers=headers, verify=False)
+                        requests.post(provision_server_url, data=config, headers=headers, verify="/backend/cert/cert.pem")
                         print(provision_server_url)
                         # print(result.decode())
             jobs_pending = LocalJob.objects.filter(status="TIME_PENDING")

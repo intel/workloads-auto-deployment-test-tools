@@ -20,9 +20,9 @@ Refer to the directory "doc"
 
 ## Release note
 What is new in this release:
-- Web UI for user easier to do provision and validation, server management, orchestration
-- Auto provision ability for: Kubernetes, Kernel update, Kernel arguments update
-- Validation ability to run workload benchmark based on Workload service framework 
+- This tool is production release now
+- Changes WSF backend from cumulus to terraform
+- Supports WSF new released workloads 
 
 Release Impact 
 - In network that could not access to internet need extra offline installation effort to initial this tool  

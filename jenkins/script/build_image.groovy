@@ -7,6 +7,7 @@ pipeline {
 		label 'node1'
 	}
 	parameters {
+	    string(name: 'front_job_id', defaultValue: '', description: 'Related Job in frontend.')
 		string(name: 'commit', defaultValue: 'main', description: '')
 		string(name: 'registry', defaultValue: '10.166.44.56:5000', description: '')
 		string(name: 'platform', defaultValue: 'ICX', description: '')
@@ -39,32 +40,16 @@ pipeline {
 			steps {
 				script {
 			    	sh (
-    					script: "cd validation &&  rm -rf build && mkdir build && cd build && echo accept | cmake -DPLATFORM=${platform} -DREGISTRY=${registry} -DBACKEND=cumulus -DRELEASE=${commitId} -DACCEPT_LICENSE=ALL ../",
+    					script: "cd validation &&  rm -rf build && mkdir build && cd build && echo accept | cmake -DPLATFORM=${platform} -DREGISTRY=${registry} -DBACKEND=terraform -DRELEASE=${commitId} -DACCEPT_LICENSE=ALL ../",
     					returnStdout: true
     					)
+    				sh (script: "cd validation/build && make build_terraform", returnStdout: true)
 			    	if (env.workload_list != '') {
     				    workload_list = env.workload_list
     				    workload_list = workload_list.split(";")
 						for (workload in workload_list) {
     					        println ("=================================Build workload: ${workload} image========================================")
     					        sh (returnStdout: true, script: "cd validation/build/workload/${workload} && make")
-    					        if (env.registry.startsWith("amr-registry-pre.caas.intel.com")) {
-                                    docker_image_list = sh (returnStdout: true, script: "docker images|grep caas |grep -v cumulus |grep ${commitId} |cut -d ' ' -f 1")
-                                    docker_image_list = docker_image_list.split("\n")
-                                    for (images_and_tag in docker_image_list) {
-                                        image = images_and_tag.split('/')[-1]
-                                        image_name = "${registry}/${image}:${commitId}"
-                                        tar_name = "${image}-${commitId}.tar"
-                                        image_num = sh (returnStdout: true, script: "aws s3 ls s3://cumulus/sf-cwr-test/ | grep ${tar_name} | wc -l")
-                                        image_num = image_num.replaceAll("\r|\n", "")
-                                        if ("${image_num}" == '0') {
-                                            sh "docker save --output ./${tar_name} ${image_name} && aws s3 cp ./${tar_name} s3://cumulus/sf-cwr-test/"
-                                        }
-                                        else {
-                                            println ("${tar_name} already in S3 ...")
-                                        }
-                                    }
-                                }
     					    }
 					}
 					else {

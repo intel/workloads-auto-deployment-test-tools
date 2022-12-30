@@ -94,6 +94,8 @@ function run() {
 	# https cert
 	cd "../cert"
 	./gencert.sh
+	rm -f ../../portal/backend/cert/*.pem;cp *.pem ../../portal/backend/cert
+	rm -f /home/*.pem;cp *.pem /home
 	cd -
 
 }

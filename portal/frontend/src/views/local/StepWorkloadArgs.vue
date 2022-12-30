@@ -74,12 +74,21 @@
                />
               </div>
             </div>
-            <div class="p-field p-col-6">
+            <div class="p-formgroup-inline">
+              <div class="p-field p-col-3">
                 <h5>Case Filter</h5>
                 <InputText
                 type="text"
                 v-model="formData.selectedCaseFilter"
                />
+              </div>
+              <div class="p-field p-col-3">
+                <h5>Workload Parameters</h5>
+                <InputText
+                type="text"
+                v-model="formData.selectedWorkloadParameter"
+               />
+              </div>
             </div>
           </div>
           <div v-show="workload_package_args_show">
@@ -151,6 +160,7 @@ export default {
       selectedCommit: null,
       selectedRegistry: null,
       selectedCaseFilter: null,
+      selectedWorkloadParameter: null,
       selectedDeployMode: null,
       selectedTaskPath: null,
       selectedPSFRepo: null,

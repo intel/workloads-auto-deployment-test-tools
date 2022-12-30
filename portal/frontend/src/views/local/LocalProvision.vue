@@ -316,6 +316,7 @@ export default {
       var commit = 'commit'
       var registry = 'registry'
       var filterCase = 'filter_case'
+      var workloadParameter = 'workload_parameter'
       // var workloadPackage = 'workloadPackage'
       // var deployMode = 'deployMode'
       // var taskPath = 'taskPath'
@@ -328,6 +329,7 @@ export default {
       configsJson[commit] = this.stepFormData.selectedCommit
       configsJson[registry] = this.stepFormData.selectedRegistry ? this.stepFormData.selectedRegistry.value : ''
       configsJson[filterCase] = this.stepFormData.selectedCaseFilter
+      configsJson[workloadParameter] = this.stepFormData.selectedWorkloadParameter
       // configsJson[workloadPackage] = String(this.stepFormData.workload_package_args)
       // configsJson[deployMode] = this.stepFormData.selectedDeployMode.value
       // configsJson[taskPath] = this.stepFormData.selectedTaskPath.value

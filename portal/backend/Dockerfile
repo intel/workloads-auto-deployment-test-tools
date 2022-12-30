@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -11,8 +11,8 @@ COPY . .
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apt-get update -y && \
-    apt-get install -y python3 python3-pip gpg wget lsb-release jq && \
-    apt-get install -y sshpass libsasl2-dev libldap2-dev libssl-dev python-dev && \
+    apt-get install -y curl python3 python3-pip gpg wget lsb-release jq && \
+    apt-get install -y sshpass libsasl2-dev libldap2-dev libssl-dev && \
     pip install -r requirements.txt && \
     chmod 777 start_dev_docker.sh && \
     apt-get install -y ca-certificates && \

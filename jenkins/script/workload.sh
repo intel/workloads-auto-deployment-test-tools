@@ -5,237 +5,237 @@ mkdir -p "${svc_framework_dir}"
 workload_dir="${svc_framework_dir}/validation"
 wiki_dir="${svc_framework_dir}/wiki"
 
-prepare_build () {
+prepare_build_terraform () {
     timeout="$1"; shift
     commit="$1"; shift
     
-    controller_ip=`cat ${WORKSPACE}/pool/cluster.yaml |grep docker_registry | awk '{print $2}'|head -n 1`
+    controller_ip=`cat ${WORKSPACE}/pool/cluster.yaml |grep docker_registry | awk '{print $2}'|head -n 1 | tr -d '\r'`
     controller_ip=`eval echo $controller_ip`
     registry="$controller_ip"
+    #use test_config.yaml from workoad folder
+    if [ "$workload_test_config_yaml" != "" ]
+    then
+        test_config_path=`find ${workload_dir}/workload/${workload} -name ${workload_test_config_yaml}`
+	if [ -f ${test_config_path} ]
+	then
+            cp -f ${test_config_path} ${WORKSPACE}/test_config.yaml
+	else
+	    echo "test configuration file doesn't exist, use default configuration."
+	fi
+    fi
+
     #build workload
     mkdir -p "$workload_dir/build"
+    
+    svr_info_value="--svrinfo"
+    if [ "$svrinfo" == "false" ]; then svr_info_value="--svrinfo=false";fi
+
+    emon_value=""
+    if [ "$emon" == "true" ]; then emon_value="--emon";fi
+    
     if [ "$cumulus_tags" == "" ]
     then
         tag=""
     else
-        tag="--tags ${cumulus_tags}"
+        tag="--tags=${cumulus_tags}"
     fi
-    
-    svr_info_value="--svrinfo=false"
-    if [ "$svrinfo" == "true" ]; then svr_info_value="--svrinfo=true";fi
 
-    emon_value="--emon=false"
-    if [ "$emon" == "true" ]; then emon_value="--emon=true --edp_publish --emon_post_process_skip=true";fi
+    collectd_info=""
+    if [ "true" == "$collectd" ]
+    then
+        collectd_info="--collectd"
+    fi
+    intel_publish_info=""
+    if [ "true" == "$intel_publish" ]
+    then
+        intel_publish_info="--intel_publish --intel_publisher_mongodb_name=services-framework --owner=sf-post-silicon"
+    fi
+    terraform_options="${tag} ${collectd_info} ${svr_info_value} ${emon_value} ${intel_publish_info}"
+    if [ "$gated" == "true" ]; then terraform_options="--svrinfo=false ${emon_value} --owner=sf-post-silicon";fi
+    if [ "$customer" == "tencent" ] || [ "ali" == "$customer" ]; then terraform_options="${svr_info_value} ${collectd_info} ${tag} ${emon_value} --owner=sf-post-silicon";fi
 
-    cumulus_options="${tag} ${svr_info_value} ${emon_value} --owner=sf-post-silicon"
-    if [ "$gated" == "true" ]; then cumulus_options="${svr_info_value} ${emon_value}";fi
-    if [ "$customer" == "tencent" ] || [ "ali" == "$customer" ]; then cumulus_options="${svr_info_value} --collectd ${tag} ${emon_value}";fi
-    delete_runs="\        rm -rf \$tmp_dir/runs/\$run_uri"
-    sed -i "/pkb.log/a $delete_runs" $workload_dir/script/validate.sh
-    if [ "$gated" == "" ]
+    if [ "$gated" == "" ] 
     then
 	gated="false"
     fi
-    pkb_str="\$SCRIPT/cumulus/shell.sh \$image \"\${vmounts[@]}\" \"\${runoptions[@]}\" --name \$run_uri -v \$WORKSPACE:\$WORKSPACE -e WORKSPACE=\$WORKSPACE -e workload=\$workload -e platform=\$platform -e run_on_specific_hw=\$run_on_specific_hw -e run_on_previous_hw=\$run_on_previous_hw -e emon=\$emon -e limited_node_number=\$limited_node_number -e build_id=\$BUILD_ID -e performance=\$performance -e CUMULUS_OPTIONS_EXTRA=\"\$CUMULUS_OPTIONS_EXTRA\" -e specified_node_number=\$specified_node_number -e owner=\$USER  -- python3 ${WORKSPACE}/script/jenkins/script/cluster.py \$CLUSTER_CONFIG \$CUMULUS_CONFIG \$run_uri /tmp/pkb \$CUMULUS_ROOT \"\$CUMULUS_OPTIONS\" $gated"
 
-    s0="s|\$SCRIPT/cumulus/shell.sh .*|$pkb_str|"
-    sed -e "$s0" -i $workload_dir/script/cumulus/validate.sh
-    # move all cumulus config to temp folder and cp to script/cumulus per jenkins option
-    mkdir -p $workload_dir/cumulus
-    mv $workload_dir/script/cumulus/cumulus-config.*.yaml $workload_dir/cumulus/
+    network_option=""
+    if [ "false" == "$default_docker_network" ]
+    then
+	network_option="--network non_default_bridge"
+    fi
+    st="\        st_options=\"\${st_options[@]}\""
+    sed -i "/terraform\/shell.sh/i $st" $workload_dir/script/terraform/validate.sh
+    run_str="\        run_uri=\$(cat \/proc\/sys\/kernel\/random\/uuid | cut -f5 -d-)"
+    sed -i "/terraform\/shell.sh/i $run_str" $workload_dir/script/terraform/validate.sh
+
+    pkb_str="\$SCRIPT/terraform/shell.sh \${csp:-static} \"\${dk_options[@]}\" $network_option --name \$run_uri -v \$WORKSPACE:\$WORKSPACE -e debug=\$debug -e WORKSPACE=\$WORKSPACE -e workload=\$workload -e platform=\$platform -e run_on_specific_hw=\$run_on_specific_hw -e run_on_previous_hw=\$run_on_previous_hw -e emon=\$emon -e limited_node_number=\$limited_node_number -e build_id=\$BUILD_ID -e performance=\$performance  -e CTESTSH_OPTIONS=\"\$CTESTSH_OPTIONS\" -e st_options=\"\$st_options\" -e specified_node_number=\$specified_node_number -e owner=\$USER -e backend=\$backend -- python3 ${WORKSPACE}/script/jenkins/script/cluster.py \$CLUSTER_CONFIG \$TERRAFORM_CONFIG \$run_uri /tmp/pkb \"\$TERRAFORM_OPTIONS\" $gated "
+
+    s0="s|\$SCRIPT/terraform/shell.sh .*|$pkb_str|"
+    sed -e "$s0" -i $workload_dir/script/terraform/validate.sh
+    
+    if [ "true" == "$baremetal" ] || [ "true" == "$gated" ]
+    then
+        # add variable json in terraform apply
+        tf_var="\  terraform plan -input=false -var-file=variable-values.json -out tfplan -no-color"
+        s0="s|terraform plan .*|$tf_var|"
+        sed -e "$s0" -i $workload_dir/script/terraform/script/start.sh
+        tf_destroy="\    TF_LOG=ERROR terraform destroy -var-file=variable-values.json -auto-approve -input=false -no-color -parallelism=1"
+        s0="s|.* terraform destroy .*|$tf_destroy|"
+        sed -e "$s0" -i $workload_dir/script/terraform/script/start.sh
+    fi
+
+    # move all terraform config to temp folder and cp to script/terraform per jenkins option
+    mkdir -p $workload_dir/terraform
+    mv $workload_dir/script/terraform/terraform-config.*.tf $workload_dir/terraform/
+    k8s_enable_registry="\    k8s_enable_registry : false,"
+    wl_enable_reboot="\    wl_enable_reboot : false,"
+    cloud_overwrite_setting=()
 
     if [ "true" == "$baremetal" ]
     then
-        cp $workload_dir/cumulus/cumulus-config.static.yaml $workload_dir/script/cumulus/cumulus-config.baremetal.yaml
+        if [ "$workload_test_config_yaml" != "" ]
+        then
+            config=${workload_test_config_yaml//_/-}
+            config=${config//.yaml/}
+        else
+            config=default
+        fi
+        cp $workload_dir/terraform/terraform-config.static.tf $workload_dir/script/terraform/terraform-config.baremetal-$config.tf
+        sed -i "/.* var.intel_publisher_sut_metadata.*/a $k8s_enable_registry" $workload_dir/script/terraform/terraform-config.baremetal-$config.tf
+	sed -i "/.* var.intel_publisher_sut_metadata.*/a $wl_enable_reboot" $workload_dir/script/terraform/terraform-config.baremetal-$config.tf
     fi
     if [ "true" == "$gated" ]
     then
-        cp $workload_dir/cumulus/cumulus-config.static.yaml $workload_dir/script/cumulus/cumulus-config.cit.yaml
+        cp $workload_dir/terraform/terraform-config.static.tf $workload_dir/script/terraform/terraform-config.cit.tf
+        sed -i "/.* var.intel_publisher_sut_metadata.*/a $k8s_enable_registry" $workload_dir/script/terraform/terraform-config.cit.tf
+	sed -i "/.* var.intel_publisher_sut_metadata.*/a $wl_enable_reboot" $workload_dir/script/terraform/terraform-config.cit.tf
     fi
     if [ "true" == "$snc4" ]
     then
-        cp $workload_dir/cumulus/cumulus-config.static.yaml $workload_dir/script/cumulus/cumulus-config.snc4.yaml
+        cp $workload_dir/terraform/terraform-config.static.tf $workload_dir/script/terraform/terraform-config.snc4.tf
     fi
     if [ "true" == "$tdx" ]
     then
-        cp $workload_dir/cumulus/cumulus-config.static.yaml $workload_dir/script/cumulus/cumulus-config.tdx.yaml
+        cp $workload_dir/terraform/terraform-config.static.tf $workload_dir/script/terraform/terraform-config.tdx.tf
     fi
-    if [ "true" == "$aws" ] || [ "true" == "$gcp" ] || [ "true" == "$azure" ] || [ "true" == "$tencent" ] || [ "true" == "$ali" ] || [ "true" == "$gaudi" ]
+    if [ "true" == "$aws" ] || [ "true" == "$gcp" ] || [ "true" == "$azure" ] || [ "true" == "$tencent" ] || [ "true" == "$ali" ] || [ "-inf" == "$specific_sut" ] || [ "-gaudi" == "$specific_sut" ] || [ "-t4" == "$specific_sut" ]
     then
         collectd_info=""
-        registry="amr-registry-pre.caas.intel.com/sf-cwr-test"
-	if [ "true" == "$collectd" ]
-	then
+	cloud_overwrite_setting+=(--set SPOT_INSTANCE=false)
+        if [ "true" == "$collectd" ]
+        then
             collectd_info="--collectd"
         fi
-        cumulus_options="${tag} ${collectd_info} --svrinfo --emon=false --owner=sf-post-silicon"
-    fi
-    if [ "true" == "$gaudi" ]
-    then
-        cp $workload_dir/cumulus/cumulus-config.-gaudi.yaml $workload_dir/script/cumulus/cumulus-config.-gaudi.yaml
-        cp -rf ~/.aws $workload_dir/script/cumulus/
-        if [ $instance ]
+        intel_publish_info=""
+	if [ "true" == "$intel_publish" ]
         then
-            s0="s|vm_count:.*|vm_count: $instance|"
-            sed -e "$s0" -i $workload_dir/script/cumulus/cumulus-config.-gaudi.yaml
+            intel_publish_info="--intel_publish --intel_publisher_mongodb_name=services-framework --owner=sf-post-silicon "
         fi
+        terraform_options="${tag} ${collectd_info} --skopeo_insecure_registries=${registry} --svrinfo ${emon_value} ${intel_publish_info}"
+        #Temporarily added '--docker-run' to -inf SUT as k8s run doesn't supported now.
+        if [ "-inf" == "$specific_sut" ]
+        then
+            terraform_options=$terraform_options" --docker-run"
+        fi
+    fi
+    if [ "-gaudi" == "$specific_sut" ]
+    then
+        cp $workload_dir/terraform/terraform-config.-gaudi.tf $workload_dir/script/terraform/terraform-config.-gaudi.tf
+        cp -rf ~/.aws $workload_dir/script/csp/
+    fi
+    if [ "-inf" == "$specific_sut" ]
+    then
+        cp $workload_dir/terraform/terraform-config.-inf.tf $workload_dir/script/terraform/terraform-config.-inf.tf
+        cp -rf ~/.aws $workload_dir/script/csp/
+    fi
+    if [ "-t4" == "$specific_sut" ]
+    then
+        cp $workload_dir/terraform/terraform-config.-t4.tf $workload_dir/script/terraform/terraform-config.-t4.tf
+        cp -rf ~/.aws $workload_dir/script/csp/
     fi
     if [ "true" == "$aws" ]
     then
         config=${aws_machine_type//./-}
-        cp $workload_dir/cumulus/cumulus-config.aws.yaml $workload_dir/script/cumulus/cumulus-config.aws-$config.yaml
-        cp -rf ~/.aws $workload_dir/script/cumulus/
-        if [ $instance ]
-        then
-            s0="s|vm_count:.*|vm_count: $instance|"
-            sed -e "$s0" -i $workload_dir/script/cumulus/cumulus-config.aws-$config.yaml
-        fi
-        if [ $aws_machine_type ]
-        then
-            s1="s|machine_type:.*|machine_type: $aws_machine_type|"
-            sed -e "$s1" -i $workload_dir/script/cumulus/cumulus-config.aws-$config.yaml
-        fi
-        if [ $aws_zone ]
-        then
-            s2="s|zone:.*|zone: $aws_zone|"
-            sed -e "$s2" -i $workload_dir/script/cumulus/cumulus-config.aws-$config.yaml
-        fi
-        if [ "$boot_disk_size" != "" ]
-        then
-            s3="s|boot_disk_size:.*|boot_disk_size: $boot_disk_size|"
-            sed -e "$s3" -i $workload_dir/script/cumulus/cumulus-config.aws-$config.yaml
-        fi
+        cp $workload_dir/terraform/terraform-config.aws.tf $workload_dir/script/terraform/terraform-config.aws-$config.tf
+        cp -rf ~/.aws $workload_dir/script/csp/
+        sed -i "s/SUT aws/SUT aws-$config/g" $workload_dir/workload/$workload/CMakeLists.txt
+        sed -i "s/SUT \"aws\"/SUT aws-$config/g" $workload_dir/workload/$workload/CMakeLists.txt
+        k8s_registry_storage="s|# k8s_registry_storage:.*|k8s_registry_storage: \"aws\",|"
+        k8s_registry_aws_storage_bucket="s|# k8s_registry_aws_storage_bucket:.*|k8s_registry_aws_storage_bucket: \"cumulus\",|"
+        k8s_registry_aws_storage_region="s|# k8s_registry_aws_storage_region:.*|k8s_registry_aws_storage_region: \"us-east-2\",|"
+        sed -e "$k8s_registry_storage" -i $workload_dir/script/terraform/terraform-config.aws-$config.tf
+        sed -e "$k8s_registry_aws_storage_bucket" -i $workload_dir/script/terraform/terraform-config.aws-$config.tf
+        sed -e "$k8s_registry_aws_storage_region" -i $workload_dir/script/terraform/terraform-config.aws-$config.tf
+	if [ $aws_machine_type ] ; then cloud_overwrite_setting+=(--set AWS_WORKER_INSTANCE_TYPE=$aws_machine_type --set AWS_MACHINE_TYPE=$aws_machine_type); fi
+        if [ $aws_zone ] ; then cloud_overwrite_setting+=(--set AWS_ZONE=$aws_zone); fi
+	if [ $boot_disk_size ] ; then cloud_overwrite_setting+=(--set AWS_WORKER_OS_DISK_SIZE=$boot_disk_size); fi
     fi
     if [ "true" == "$azure" ]
     then
         config=${azure_machine_type//_/-}
-        cp $workload_dir/cumulus/cumulus-config.azure.yaml $workload_dir/script/cumulus/cumulus-config.azure-$config.yaml
-        cp -rf ~/.azure $workload_dir/script/cumulus/
-        cp -rf ~/.aws $workload_dir/script/cumulus/
-        if [ $instance ]
-        then
-            s0="s|vm_count:.*|vm_count: $instance|"
-            sed -e "$s0" -i $workload_dir/script/cumulus/cumulus-config.azure-$config.yaml
-        fi
-        if [ $azure_machine_type ]
-        then
-            s1="s|machine_type:.*|machine_type: $azure_machine_type|"
-            sed -e "$s1" -i $workload_dir/script/cumulus/cumulus-config.azure-$config.yaml
-        fi
-        if [ "$boot_disk_size" != "" ]
-        then
-            s3="s|boot_disk_size:.*|boot_disk_size: $boot_disk_size|"
-            sed -e "$s3" -i $workload_dir/script/cumulus/cumulus-config.azure-$config.yaml
-        fi
-	if [ $azure_zone ]
-        then
-            s2="s|zone:.*|zone: $azure_zone|"
-            sed -e "$s2" -i $workload_dir/script/cumulus/cumulus-config.azure-$config.yaml
-        fi
+        cp $workload_dir/terraform/terraform-config.azure.tf $workload_dir/script/terraform/terraform-config.azure-$config.tf
+        cp -rf ~/.azure $workload_dir/script/csp/
+	if [ $azure_machine_type ] ; then cloud_overwrite_setting+=(--set AZURE_WORKER_INSTANCE_TYPE=$azure_machine_type --set AZURE_MACHINE_TYPE=$azure_machine_type); fi
+        if [ $azure_zone ] ; then cloud_overwrite_setting+=(--set AZURE_ZONE=$azure_zone); fi
+	if [ $boot_disk_size ] ; then cloud_overwrite_setting+=(--set AZURE_WORKER_OS_DISK_SIZE=$boot_disk_size); fi
     fi
     if [ "true" == "$gcp" ]
     then
-        cp $workload_dir/cumulus/cumulus-config.gcp.yaml $workload_dir/script/cumulus/cumulus-config.gcp-$gcp_machine_type.yaml
-        cp -rf ~/.config $workload_dir/script/cumulus/
-        cp -rf ~/.aws $workload_dir/script/cumulus/
-        if [ $instance ]
-        then
-            s0="s|vm_count:.*|vm_count: $instance|"
-            sed -e "$s0" -i $workload_dir/script/cumulus/cumulus-config.gcp-$gcp_machine_type.yaml
-        fi
-	if [ $gcp_machine_type ]
-        then
-            s1="s|machine_type:.*|machine_type: $gcp_machine_type|"
-            sed -e "$s1" -i $workload_dir/script/cumulus/cumulus-config.gcp-$gcp_machine_type.yaml
-        fi
-	if [ $gcp_zone ]
-        then
-            s2="s|zone:.*|zone: $gcp_zone|"
-            sed -e "$s2" -i $workload_dir/script/cumulus/cumulus-config.gcp-$gcp_machine_type.yaml
-	    gcp_subnet_region=`echo $gcp_zone|awk -F'-' '{print $1}'`-`echo $gcp_zone|awk -F'-' '{print $2}'`
-            s2="s|gce_subnet_region:.*|gce_subnet_region: $gcp_subnet_region|"
-            sed -e "$s2" -i $workload_dir/script/cumulus/cumulus-config.gcp-$gcp_machine_type.yaml
-        fi
-        if [ "$boot_disk_size" != "" ]
-        then
-            s3="s|gce_boot_disk_size:.*|gce_boot_disk_size: \"$boot_disk_size\"|"
-            sed -e "$s3" -i $workload_dir/script/cumulus/cumulus-config.gcp-$gcp_machine_type.yaml
-        fi
+        cp $workload_dir/terraform/terraform-config.gcp.tf $workload_dir/script/terraform/terraform-config.gcp-$gcp_machine_type.tf
+        cp -rf ~/.config $workload_dir/script/csp/
+	if [ $gcp_machine_type ] ; then cloud_overwrite_setting+=(--set GCP_WORKER_INSTANCE_TYPE=$gcp_machine_type --set GCP_MACHINE_TYPE=$gcp_machine_type); fi
+        if [ $gcp_zone ] ; then cloud_overwrite_setting+=(--set GCP_ZONE=$gcp_zone); fi
+	if [ $boot_disk_size ] ; then cloud_overwrite_setting+=(--set GCP_WORKER_OS_DISK_SIZE=$boot_disk_size); fi
+    fi
+    if [ "true" == "$vsphere" ]
+    then
+        cp $workload_dir/terraform/terraform-config.vsphere.tf $workload_dir/script/terraform/terraform-config.vsphere-$vsphere_machine_type.tf
+        cp -rf ~/.vsphere $workload_dir/script/csp/
+	if [ $vsphere_machine_type ] ; then cloud_overwrite_setting+=(--set VSPHERE_WORKER_INSTANCE_TYPE=$vsphere_machine_type --set VSPHERE_MACHINE_TYPE=$vsphere_machine_type); fi
     fi
     if [ "true" == "$tencent" ]
     then
         config=${tencent_machine_type//./-}
-        cp $workload_dir/cumulus/cumulus-config.tencent.yaml $workload_dir/script/cumulus/cumulus-config.tencent-$config.yaml
-        cp -rf ~/.tccli $workload_dir/script/cumulus/
-        cp -rf ~/.aws $workload_dir/script/cumulus/
-        if [ $instance ]
-        then
-            s0="s|vm_count:.*|vm_count: $instance|"
-            sed -e "$s0" -i $workload_dir/script/cumulus/cumulus-config.tencent-$config.yaml
-        fi
-        if [ $tencent_machine_type ]
-        then
-            s1="s|machine_type:.*|machine_type: $tencent_machine_type|"
-            sed -e "$s1" -i $workload_dir/script/cumulus/cumulus-config.tencent-$config.yaml
-        fi
-        if [ $tencent_zone ]
-        then
-            s2="s|zone:.*|zone: $tencent_zone|"
-            sed -e "$s2" -i $workload_dir/script/cumulus/cumulus-config.tencent-$config.yaml
-        fi
-        if [ "$boot_disk_size" != "" ]
-        then
-            s3="s|tencent_boot_disk_size:.*|tencent_boot_disk_size: \"$boot_disk_size\"|"
-            sed -e "$s3" -i $workload_dir/script/cumulus/cumulus-config.tencent-$config.yaml
-        fi
+        cp $workload_dir/terraform/terraform-config.tencent.tf $workload_dir/script/terraform/terraform-config.tencent-$config.tf
+        cp -rf ~/.tccli $workload_dir/script/csp/
+	if [ $tencent_machine_type ] ; then cloud_overwrite_setting+=(--set TENCENT_WORKER_INSTANCE_TYPE=$tencent_machine_type --set TENCENT_MACHINE_TYPE=$tencent_machine_type); fi
+        if [ $tencent_zone ] ; then cloud_overwrite_setting+=(--set TENCENT_ZONE=$tencent_zone); fi
+	if [ $boot_disk_size ] ; then cloud_overwrite_setting+=(--set TENCENT_WORKER_OS_DISK_SIZE=$boot_disk_size); fi
     fi
     if [ "true" == "$ali" ]
     then
         config=${ali_machine_type//./-}
-        cp $workload_dir/cumulus/cumulus-config.alicloud.yaml $workload_dir/script/cumulus/cumulus-config.alicloud-$config.yaml
-        cp -rf ~/.aliyun $workload_dir/script/cumulus/
-        cp -rf ~/.aws $workload_dir/script/cumulus/
-        if [ $instance ]
-        then
-            s0="s|vm_count:.*|vm_count: $instance|"
-            sed -e "$s0" -i $workload_dir/script/cumulus/cumulus-config.alicloud-$config.yaml
-        fi
-        if [ $ali_machine_type ]
-        then
-            s1="s|machine_type:.*|machine_type: $ali_machine_type|"
-            sed -e "$s1" -i $workload_dir/script/cumulus/cumulus-config.alicloud-$config.yaml
-        fi
-        if [ $ali_zone ]
-        then
-            s2="s|zone:.*|zone: $ali_zone|"
-            sed -e "$s2" -i $workload_dir/script/cumulus/cumulus-config.alicloud-$config.yaml
-        fi
-        if [ "$boot_disk_size" != "" ]
-        then
-            s3="s|ali_system_disk_size:.*|ali_system_disk_size: $boot_disk_size|"
-            sed -e "$s3" -i $workload_dir/script/cumulus/cumulus-config.alicloud-$config.yaml
-        fi
+        cp $workload_dir/terraform/terraform-config.alicloud.tf $workload_dir/script/terraform/terraform-config.alicloud-$config.tf
+        cp -rf ~/.aliyun $workload_dir/script/csp/
+	if [ $ali_machine_type ] ; then cloud_overwrite_setting+=(--set ALICLOUD_WORKER_INSTANCE_TYPE=$ali_machine_type --set ALICLOUD_MACHINE_TYPE=$ali_machine_type); fi
+        if [ $ali_zone ] ; then cloud_overwrite_setting+=(--set ALICLOUD_ZONE=$ali_zone); fi
+	if [ $boot_disk_size ] ; then cloud_overwrite_setting+=(--set ALICLOUD_WORKER_OS_DISK_SIZE=$boot_disk_size); fi
     fi
     if [ "SPR" == "$platform" ] && [ "true" == "$vm" ]
     then
-        cp $workload_dir/cumulus/cumulus-config.static.yaml $workload_dir/script/cumulus/cumulus-config.vm.yaml
+        if [ "$workload_test_config_yaml" != "" ]
+        then
+            config=${workload_test_config_yaml//_/-}
+            config=${config//.yaml/}
+        else
+            config=default
+        fi
+        cp $workload_dir/terraform/terraform-config.static.tf $workload_dir/script/terraform/terraform-config.vm-$config.tf
     fi
-    if [ "$workload" == "Bitnami-WordPress" ]
-    then
-        rm -rf $workload_dir/script/cumulus/cumulus-config.*.yaml
-        cp $workload_dir/cumulus/cumulus-config.-bitnami.yaml $workload_dir/script/cumulus/cumulus-config.-bitnami.yaml
-        cp -rf ~/.azure $workload_dir/script/cumulus/
-        latest_image=`az vm image list --all --publisher bitnami|grep Bitnami:wordpress-intel | awk -F\" '{print $4}'`
-        s0="s|Bitnami:.*|$latest_image|"
-        sed -e "$s0" -i $workload_dir/script/cumulus/cumulus-config.-bitnami.yaml
-    fi
+
     rm -rf "$workload_dir/build" && mkdir -p "$workload_dir/build"
-    if [ ! -z $append_cumulus_option ]
+    if [ ! -z "$append_option" ]
     then
-        cumulus_options=$cumulus_options" "$append_cumulus_option
+        terraform_options=$terraform_options" "$append_option
     fi
-    echo cmake -DPLATFORM=$platform -DRELEASE=:$commit -DACCEPT_LICENSE=ALL -DBACKEND=cumulus -DCUMULUS_OPTIONS="'$cumulus_options'" -DREGISTRY=$registry -DTIMEOUT=$timeout ../
-    cd "$workload_dir/build" && cmake -DPLATFORM=$platform -DRELEASE=:$commit -DACCEPT_LICENSE=ALL -DBACKEND=cumulus -DCUMULUS_OPTIONS="'$cumulus_options'" -DREGISTRY=$registry -DTIMEOUT=$timeout ../
+    if [ "true" == "$external" ]
+    then
+        commit="ext_"$commit
+    fi
+    echo ${cloud_overwrite_setting[@]} > ${WORKSPACE}/cloud_setting
+    echo cmake -DPLATFORM=$platform -DRELEASE=:$commit -DACCEPT_LICENSE=ALL -DBACKEND=terraform -DTERRAFORM_OPTIONS="'$terraform_options'" -DREGISTRY=$registry -DTIMEOUT=$timeout ../
+    cd "$workload_dir/build" && cmake -DPLATFORM=$platform -DRELEASE=:$commit -DACCEPT_LICENSE=ALL -DBACKEND=terraform -DTERRAFORM_OPTIONS="'$terraform_options'" -DREGISTRY=$registry -DTIMEOUT=$timeout ../
 }
 
 get_bom () {
@@ -280,7 +280,71 @@ get_bom () {
     done < <(make $bom | grep -E '^(BOM|ARG)' 2> /dev/null)
 }
 
-run_workload_benchmark () {
+ctest_reuse_sut()
+{
+    if [ -z $1 ]
+    then
+        filter=''
+    else
+        filter=$1; shift
+    fi
+
+    if [ -z $1 ]
+    then
+        exclude=''
+    else
+        exclude=$1; shift
+    fi
+
+    cloudlist=()
+    [ "true" == "$aws" ] && cloudlist+=("aws")
+    [ "true" == "$gcp" ] && cloudlist+=("gcp")
+    [ "true" == "$azure" ] && cloudlist+=("azure")
+    [ "true" == "$tencent" ] && cloudlist+=("tencent")
+    [ "true" == "$ali" ] && cloudlist+=("alicloud")
+
+    for cloud in ${cloudlist[@]}
+    do
+        if [ -z $filter ] && [ -z $exclude ]
+        then
+            caselist=$(ctest -N | grep -i $cloud | grep -vi _gated | awk '{print $NF}')
+        elif [ ! -z $filter ] && [ -z $exclude ]
+        then
+            caselist=$(ctest -N | grep -i $cloud | grep -vi _gated | grep -E $filter | awk '{print $NF}')
+        elif [ -z $filter ] && [ ! -z $exclude ]
+        then
+            caselist=$(ctest -N | grep -i $cloud | grep -vi _gated | grep -Ev $exclude | awk '{print $NF}')
+        else
+            caselist=$(ctest -N | grep -i $cloud | grep -vi _gated | grep -E $filter | grep -Ev $exclude | awk '{print $NF}')
+        fi
+	echo 'Test List: '$caselist
+		
+	declare -i i=0
+	for case in $caselist
+	do
+	    [ $i -eq 0 ] && ./ctest.sh -R ${case:5}$ --test-config=${WORKSPACE}/test_config.yaml --prepare-sut -V && i+=1 && firstcase=${case:5}
+	    [ $i -gt 0 ] && ([ -d sut-logs-${case:5} ] ||cp -rp sut-logs-${firstcase} sut-logs-${case:5}) && ./ctest.sh -R ${case:5}$ --test-config=${WORKSPACE}/test_config.yaml --reuse-sut -V
+	    cp -rp Testing Testing_${case:5}
+	done
+	./ctest.sh -R ${case:5}$ --test-config=${WORKSPACE}/test_config.yaml --cleanup-sut -V
+	
+	[ -f Testing/Temporary/LastTest.log ] && rm -f Testing/Temporary/LastTest.log && cat $(find Testing_* -name LastTest.log ) >> Testing/Temporary/LastTest.log
+	[ -f Testing/Temporary/LastTestsFailed.log ] && rm -f Testing/Temporary/LastTestsFailed.log && cat $(find Testing_* -name LastTestsFailed.log ) >> Testing/Temporary/LastTestsFailed.log
+
+	for sutdir in $(ls -d sut-logs-*)
+	do
+	    [[ $sutdir == *$firstcase* ]] || rm -rf $sutdir
+	done
+	
+	for dir in $(date "+%m%d")-*-logs-*
+	do
+	    [ -d ${dir:12} ] && rm -rf ${dir:12}
+	    mv $dir ${dir:12}
+	done
+    done
+}
+
+run_workload_benchmark () { 
     workload=$1; shift
     if [ "main" == "$customer" ]
     then
@@ -288,6 +352,13 @@ run_workload_benchmark () {
     else
         workload_build_dir=$workload_dir/build/workload/customer/$customer/$workload
     fi
+    if [ -f ${WORKSPACE}/cloud_setting ]
+    then
+        CLOUD_OVERWRITE_SETTING=$(cat ${WORKSPACE}/cloud_setting)
+    else
+        CLOUD_OVERWRITE_SETTING=""
+    fi
+    echo "ctest cloud setting is ${CLOUD_OVERWRITE_SETTING}"
     cd $workload_build_dir
     mkdir -p $workload_dir/bom
     for i in `cat CMakeLists.txt  |grep 'add_workload(' | awk -F\" '{print $2}'`
@@ -295,12 +366,16 @@ run_workload_benchmark () {
         bom="bom_"${i}
         get_bom $bom
     done
-
+    if [ "true" == "$performance" ] ; then use_ctest_script=true; fi
+    if [ "true" == "$gcp" ] || [ "true" == "$azure" ] || [ "true" == "$aws" ] || [ "true" == "$tencent" ] || [ "true" == "$ali" ] || [ "true" == "$vsphere" ]
+	then
+	    use_ctest_script=true
+	fi
     if [ $parallel_run_case_number ]; then
         test_number=$parallel_run_case_number
     elif [ "true" == "$gcp" ] || [ "true" == "$azure" ] || [ "true" == "$aws" ] || [ "true" == "$tencent" ] || [ "true" == "$ali" ]
     then
-        test_number=`ls $workload_dir/script/cumulus/cumulus-config.*|wc -l`
+        test_number=`ls $workload_dir/script/terraform/terraform-config.*|wc -l`
     else
         test_number=5
     fi
@@ -309,25 +384,66 @@ run_workload_benchmark () {
     then
         test_number=1
     fi
-    if [ "true" == "$gaudi" ]
+    if [ "-inf" == "$specific_sut" ] || [ "-gaudi" == "$specific_sut" ]|| [ "-t4" == "$specific_sut" ]
     then
         test_number=1
     fi
     if [ "$gated" == "true" ]
     then
-        cd "$workload_build_dir" && ctest -R '_gated$' -j$test_number -VV
+        gated_case=`cd "$workload_build_dir" && ctest -N | grep gated | wc -l`
+	if [ "$gated_case" != 0 ]
+	then
+	    cd "$workload_build_dir" && ctest -R '_gated$' -j$test_number -VV
+	else
+	    echo "WARNING: There is no gated case for this Workload, need to check"
+	    exit 1
+	fi
     else
-        if [ -z $filter_case ]
+        if [ -z $filter_case ] && [ -z $exclude_case ]
         then
-            cd "$workload_build_dir" && TEST_CONFIG=${WORKSPACE}/test_config.yaml ctest -j$test_number -VV
-        else
-            if [[ $filter_case == !* ]]
+            if [ "true" == "$use_ctest_script" ]
             then
-                filter_case=`echo $filter_case|awk -F'!' '{print $2}'`
-                echo "$workload_dir/build/workload/$workload" ctest -E "$filter_case" -j$test_number -VV
-                cd "$workload_build_dir" && TEST_CONFIG=${WORKSPACE}/test_config.yaml ctest -E $filter_case -j$test_number -VV
+                cd $workload_build_dir && ./ctest.sh ${CLOUD_OVERWRITE_SETTING} --run=${iteration} --test-config=${WORKSPACE}/test_config.yaml -E '_gated$' -VV 
+            elif [ "true" == "$share_sut" ]
+            then
+                cd "$workload_build_dir" && ctest_reuse_sut $filter_case $exclude_case
             else
-	        cd "$workload_build_dir" && TEST_CONFIG=${WORKSPACE}/test_config.yaml ctest -R $filter_case -j$test_number -VV
+                echo "TEST_CONFIG=${WORKSPACE}/test_config.yaml ctest -E '_gated$' -j$test_number -VV"
+                cd $workload_build_dir && TEST_CONFIG=${WORKSPACE}/test_config.yaml ctest -E '_gated$' -j$test_number -VV
+            fi
+        elif [ ! -z $filter_case ] && [ -z $exclude_case ]
+        then
+            if [ "true" == "$use_ctest_script" ]
+            then
+                cd $workload_build_dir && ./ctest.sh ${CLOUD_OVERWRITE_SETTING} --run=${iteration} --test-config=${WORKSPACE}/test_config.yaml -E "_gated$" -R $filter_case -VV
+            elif [ "true" == "$share_sut" ]
+            then
+                cd "$workload_build_dir" && ctest_reuse_sut $filter_case $exclude_case
+            else
+                echo "$workload_dir/build/workload/$workload" ctest -E "_gated$" -R $filter_case -j$test_number -VV
+                cd "$workload_build_dir" && TEST_CONFIG=${WORKSPACE}/test_config.yaml ctest -E "_gated$" -R $filter_case -j$test_number -VV
+            fi
+        elif [ -z $filter_case ] && [ ! -z $exclude_case ]
+        then
+            if [ "true" == "$use_ctest_script" ]
+            then
+                cd $workload_build_dir && ./ctest.sh ${CLOUD_OVERWRITE_SETTING} --run=${iteration} --test-config=${WORKSPACE}/test_config.yaml -E "_gated$|$exclude_case" -VV
+            elif [ "true" == "$share_sut" ]
+            then
+                cd "$workload_build_dir" && ctest_reuse_sut $filter_case $exclude_case
+            else
+                echo "$workload_dir/build/workload/$workload" ctest -E "_gated$|$exclude_case" -j$test_number -VV
+                cd "$workload_build_dir" && TEST_CONFIG=${WORKSPACE}/test_config.yaml ctest -E "_gated$|$exclude_case" -j$test_number -VV	
+            fi
+        else
+            if [ "true" == "$use_ctest_script" ]
+            then
+                cd $workload_build_dir && ./ctest.sh ${CLOUD_OVERWRITE_SETTING} -E "_gated$|$exclude_case" -R $filter_case --run=${iteration} --test-config=${WORKSPACE}/test_config.yaml -VV
+            elif [ "true" == "$share_sut" ]
+            then
+                cd "$workload_build_dir" && ctest_reuse_sut $filter_case $exclude_case
+            else
+                cd "$workload_build_dir" && TEST_CONFIG=${WORKSPACE}/test_config.yaml ctest -E "_gated$|$exclude_case" -R $filter_case -j$test_number -VV
             fi
         fi
     fi
@@ -341,7 +457,7 @@ create_artifacts () {
     else
         build_folder=$workload_dir/build/workload/customer/$customer/$workload
     fi
-
+    
     mkdir -p $WORKSPACE/logs/ctest
     mkdir -p $WORKSPACE/result/ctest
     cp -rf $build_folder/Testing/Temporary/* $WORKSPACE/logs/ctest/
@@ -351,11 +467,19 @@ create_artifacts () {
         if [ -d "$log" ]; then
             #Remove svr-info binary
             rm -rf $build_folder/${log}/svr-info
+            #Remove the file *.tar, if has. Issue:4976
+            rm -rf $build_folder/${log}/*.tar
+	    rm -rf $build_folder/${log}/.terraform
+            rm -rf $build_folder/${log}/template
             #Exclude emon/collectd/svrinfo data if no performance run and user not specified to keep it.
             if [ "$performance" == "false" ] && [ "$keep_emon_collectd_data" == "false" ]
             then
                 echo "Exclude emon/collectd/svr_info data"
-                for run_id in `ls $build_folder/${log}/runs`
+		
+                rm -rf $build_folder/${log}/*-emon
+                rm -rf $build_folder/${log}/*-collectd
+                rm -rf $build_folder/${log}/*-svrinfo
+		for run_id in `ls $build_folder/${log}/runs`
                 do
                     rm -rf $build_folder/${log}/runs/$run_id/*-emon
                     rm -rf $build_folder/${log}/runs/$run_id/*-collectd
@@ -388,22 +512,22 @@ create_artifacts () {
 run_workload_kpi () {
     build_folder="$1"; shift
     test_name="$1"; shift
-
+    
     kpi=kpi_${test_name}
 
     mkdir -p "$workload_dir/kpi"
-    if [ "false" == "$performance" ]
     log_folder=`ls|grep logs|grep $test_name\$`
-    then
+    if [ "false" == "$performance" ]
+    then 
         ./list-kpi.sh --primary $log_folder |grep ^*| while read i
         do
-            echo $i >> "$workload_dir/kpi/$kpi.log"
+            echo "$i" >> "$workload_dir/kpi/$kpi.log"
         done
     else
         itr=1
         ./list-kpi.sh --primary $log_folder |grep ^* | while read i
         do
-            echo itr$itr $i >> "$workload_dir/kpi/$kpi.log"
+            echo itr"$itr" "$i" >> "$workload_dir/kpi/$kpi.log"
             let itr+=1
         done
         ./list-kpi.sh --primary $log_folder | grep 'med \*' | awk -F'med ' '{print $2}' >> "$workload_dir/kpi/$kpi.log"
@@ -417,7 +541,7 @@ while [ "$#" -gt 0  ];do
       timeout=$1
       shift
       commit=$1
-      prepare_build $timeout $commit
+      prepare_build_terraform $timeout $commit
       shift
       ;;
     benchmark)

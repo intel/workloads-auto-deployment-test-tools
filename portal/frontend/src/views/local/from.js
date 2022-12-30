@@ -47,6 +47,7 @@ var stepFormData = {
   Registry: [],
   selectedRegistry: { value: '' },
   selectedCaseFilter: '',
+  selectedWorkloadParameter: '',
   // DeployMode: [],
   // selectedDeployMode: '',
   // TaskPath: [],

@@ -35,6 +35,8 @@ pipeline {
     booleanParam(name: 'run_on_previous_hw', defaultValue: true, description: 'Run validation on the same HW configuration with previous.')
     string(name: 'cluster_file', defaultValue: 'cluster.yaml', description: 'To use different cluster.yaml file in artifactory')
     string(name: 'limited_node_number', defaultValue: '4', description: 'Limit some cases execute if their required nodes are greater than the specified value, and mark them as no_run.')
+    string(name: 'workload_params', defaultValue: '', description: 'workload exposed params key-value pair. e.g: param1=value1 param2=value2')
+    string(name: 'workload_test_config_yaml', defaultValue: '', description: 'low end or high end configuration file from workload folder, will ignore workload_params', trim: true)
     string(name: 'controller_ip', defaultValue: '', description: 'controller ip')
     string(name: 'worker_ip_list', defaultValue: '', description: 'worker ips, join with \',\' ')
   }
@@ -128,16 +130,6 @@ pipeline {
                         files = files.replaceAll('/validate.sh','')
                         files = files.replaceAll('workload/','').split("\n");
                     }
-                    workload_map = [:]
-                    for (file in files) {
-                        workload = "${file}".split("/")[-1]
-                        workload_name = sh (
-                        script: "cat validation/workload/${file}/CMakeLists.txt |grep 'add_workload('",
-                        returnStdout: true
-                        )
-                        workload_name = workload_name.split('"')[1]
-                        workload_map[workload] = workload_name
-                    }
 
                     def workloads = [:]
                     for (p in platforms) {
@@ -152,42 +144,38 @@ pipeline {
                             def fvar
                             fvar = "${f}".split("/")[-1]
                             def pvar = "${p}"
-                            if(supported_platform.contains(workload_map[fvar].toLowerCase())) {
-                                workloads["${pvar}/${fvar}"] = {
-                                    stage("${pvar}/${fvar}") {
-                                        script {
-                                            build job:"benchmark" , parameters:[
-                                                [$class: "StringParameterValue", name: "platform", value: "${pvar}"],
-                                                [$class: "StringParameterValue", name: "repo", value: "${env.repo}"],
-                                                [$class: "StringParameterValue", name: "registry", value: "${env.registry}"],
-                                                [$class: "StringParameterValue", name: "instance_api", value: "${env.instance_api}"],
-                                                [$class: "StringParameterValue", name: "artifactory_url", value: "${env.artifactory_url}"],
-                                                [$class: "StringParameterValue", name: "commit_id", value: "${env.sf_commit}"],
-                                                [$class: "BooleanParameterValue", name: "emon", value: "${emon}"],
-                                                [$class: "BooleanParameterValue", name: "vm", value: "${vm}"],
-                                                [$class: "BooleanParameterValue", name: "baremetal", value: "${baremetal}"],
-                                                [$class: "BooleanParameterValue", name: "snc4", value: "${snc4}"],
-                                                [$class: "BooleanParameterValue", name: "tdx", value: "${tdx}"],
-                                                [$class: "StringParameterValue", name: "workload", value: "${fvar}"],
-                                                [$class: "StringParameterValue", name: "session", value: "${test_session}"],
-                                                [$class: "StringParameterValue", name: "run_on_previous_hw", value: "${run_on_previous_hw}"],
-                                                [$class: "StringParameterValue", name: "cumulus_tags", value: "${cumulus_tags}"],
-                                                [$class: "StringParameterValue", name: "filter_case", value: "${filter_case}"],
-                                                [$class: "StringParameterValue", name: "customer", value: "${env.customer}"],
-                                                [$class: 'StringParameterValue', name: 'limited_node_number', value: "${limited_node_number}"],
-                                                [$class: 'StringParameterValue', name: 'cluster_file', value: "${cluster_file}"],
-                                                [$class: 'StringParameterValue', name: 'controller_ip', value: "${controller_ip}"],
-                                                [$class: 'StringParameterValue', name: 'worker_ip_list', value: "${worker_ip_list}"]
-                                            ]
+							workloads["${pvar}/${fvar}"] = {
+								stage("${pvar}/${fvar}") {
+									script {
+										build job:"benchmark" , parameters:[
+											[$class: "StringParameterValue", name: "platform", value: "${pvar}"],
+											[$class: "StringParameterValue", name: "repo", value: "${env.repo}"],
+											[$class: "StringParameterValue", name: "registry", value: "${env.registry}"],
+											[$class: "StringParameterValue", name: "instance_api", value: "${env.instance_api}"],
+											[$class: "StringParameterValue", name: "artifactory_url", value: "${env.artifactory_url}"],
+											[$class: "StringParameterValue", name: "commit_id", value: "${env.sf_commit}"],
+											[$class: "BooleanParameterValue", name: "emon", value: "${emon}"],
+											[$class: "BooleanParameterValue", name: "vm", value: "${vm}"],
+											[$class: "BooleanParameterValue", name: "baremetal", value: "${baremetal}"],
+											[$class: "BooleanParameterValue", name: "snc4", value: "${snc4}"],
+											[$class: "BooleanParameterValue", name: "tdx", value: "${tdx}"],
+											[$class: "StringParameterValue", name: "workload", value: "${fvar}"],
+											[$class: "StringParameterValue", name: "session", value: "${test_session}"],
+											[$class: "BooleanParameterValue", name: "run_on_previous_hw", value: "${run_on_previous_hw}"],
+											[$class: "StringParameterValue", name: "cumulus_tags", value: "${cumulus_tags}"],
+											[$class: "StringParameterValue", name: "filter_case", value: "${filter_case}"],
+											[$class: "StringParameterValue", name: "customer", value: "${env.customer}"],
+											[$class: 'StringParameterValue', name: 'limited_node_number', value: "${limited_node_number}"],
+											[$class: 'StringParameterValue', name: 'cluster_file', value: "${cluster_file}"],
+											[$class: 'StringParameterValue', name: 'workload_params', value: "${workload_params}"],
+											[$class: 'StringParameterValue', name: 'workload_test_config_yaml', value: "${workload_test_config_yaml}"],
+											[$class: 'StringParameterValue', name: 'controller_ip', value: "${controller_ip}"],
+											[$class: 'StringParameterValue', name: 'worker_ip_list', value: "${worker_ip_list}"]
+										]
 
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                println "${pvar}-${fvar} is not supported"
-                            }
+									}
+								}
+							}
                         }
                     }
                     def sorted_workloads = getSorted(workloads)

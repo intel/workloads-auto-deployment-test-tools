@@ -34,7 +34,7 @@ SECRET_KEY = '1^f6s%w(0^3#@2%9e+v5q--5umw)2hy1rz+5sl149or2yspy@r'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 import logging
 logger = logging.getLogger('django_auth_ldap')
@@ -104,7 +104,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'taas',
         'USER': 'postgres',
-        'PASSWORD': '#1Danger0us',
+        'PASSWORD': '',
         'HOST': '127.0.0.1',
         'PORT': '5432',
     }

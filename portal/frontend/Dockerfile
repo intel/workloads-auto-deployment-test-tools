@@ -1,4 +1,4 @@
-FROM node:14.20.0-alpine
+FROM node:14.21.1-alpine
 
 ENV CONTAINER_PATH /frontend
 

@@ -13,7 +13,7 @@ services:
       - postgresql-data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: 'postgres'
-      POSTGRES_PASSWORD: '#1Danger0us'
+      POSTGRES_PASSWORD: ''
       POSTGRES_DB: 'taas'
 
   frontend:
@@ -41,7 +41,7 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: taas.settings_dev_docker
       VAULT_ADDR: "http://10.166.33.34:8200"
-      VAULT_TOKEN: "hvs.byBLyKR8R0Sgt5mynxxwRi5A"
+      VAULT_TOKEN: ""
     read_only: true
     volumes:
       - ./frontend:/frontend:rw

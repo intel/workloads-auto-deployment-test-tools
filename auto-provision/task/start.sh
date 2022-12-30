@@ -29,6 +29,21 @@ function sshSecret() {
 	cd -
 }
 
+function configInsecureRegistry() {
+    for ((i = 1; i < ${#deployHost[@]}; i++)); do
+        ip=$(echo ${deployHost[$i]} | awk -F"," '{print $3}')
+		user=$(echo ${deployHost[$i]} | awk -F"," '{print $4}')
+		#copy script to remote server
+		scp scripts/config_insecure_registry.sh $user@$ip:/tmp
+		if [ "$user" == "root" ]
+		then
+		    ssh $user@$ip "cd /tmp;chmod +x config_insecure_registry.sh;./config_insecure_registry.sh $registry > /tmp/config_insecure_registry.out"
+		else
+		    ssh $user@$ip "cd /tmp;chmod +x config_insecure_registry.sh;sudo ./config_insecure_registry.sh $registry > /tmp/config_insecure_registry.out"
+		fi
+    done
+}
+
 function updateStatus() {
 	# $1 progress $2 status
 	echo "{"progress": $1}" | http put "$frontApi"
@@ -148,6 +163,7 @@ function startTask() {
 	systemDeploy
 	#vmDeploy
 	softwarePackage
+	configInsecureRegistry
 	workloadDeploy
 }
 

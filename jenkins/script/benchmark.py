@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 from result import Execution
-import subprocess
+import subprocess # nosec
 import time
 import os
 import re

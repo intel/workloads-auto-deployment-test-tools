@@ -12,6 +12,8 @@ class LocalInstance(models.Model):
     username = models.CharField(max_length=30, null=True, blank=True)
     password = models.CharField(max_length=30, null=True, blank=True)
     ip = models.CharField(max_length=30, null=True, blank=True)
+    ssh_port = models.PositiveIntegerField(null=True, blank=True, default=22)
+    internal_ip = models.CharField(max_length=30, null=True, blank=True)
     region = models.CharField(max_length=30, null=True, blank=True)
     instance_type = models.CharField(max_length=30, null=True, blank=True)
     cpu_arch = models.CharField(max_length=30, null=True, blank=True)
@@ -26,6 +28,8 @@ class LocalInstance(models.Model):
     platform = models.CharField(max_length=30, null=True, blank=True)
     user = models.CharField(max_length=30, null=True, blank=True)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES,default='FREE', null=True, blank=True)
+    labels = ArrayField(models.CharField(max_length=128),
+                        default=list, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
 

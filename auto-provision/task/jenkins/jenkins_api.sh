@@ -64,7 +64,8 @@ queuedId=$(curl -i \
     --data artifactory_url=$JfrogUrl \
     --data sf_commit=$commit \
     --data registry=$registry \
-    --data filter_case=$filterCase \
+    --data filter_case="$filterCase" \
+    --data workload_params="$workloadParameter" \
     --data limited_node_number=$limited_node_number \
     --data worker_ip_list=$WORKER_IP_LIST | grep -i location | awk -F '/' '{print $6}')
 

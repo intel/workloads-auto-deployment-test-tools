@@ -1,6 +1,8 @@
 import requests
-import subprocess
+import subprocess # nosec
 import json
+import os
+import re
 from local.models import LocalSetting
 
 # try catch need to be added
@@ -16,9 +18,8 @@ def getUser(provision_server_url):
 def getToken(provision_server_url):
     payload = getUser(provision_server_url)
     token_url = f"{provision_server_url}/login"
-        
     res = ""
-    res = requests.post(token_url, params=payload, verify=False)
+    res = requests.post(token_url, params=payload, verify="/backend/cert/cert.pem")
     token = json.loads(res.content)['token']
     return token
 

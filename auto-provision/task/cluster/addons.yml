@@ -218,7 +218,7 @@ argocd_enabled: false
 #   kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server -o name | cut -d'/' -f 2
 #   ---
 # Use the following var to set admin password
-# argocd_admin_password: "password"
+# argocd_admin_password: ""
 
 # The plugin manager for kubectl
 krew_enabled: {{krew_enabled}}

@@ -4,10 +4,9 @@ import re
 import requests
 import yaml
 from utils import sha256, execute_cmd, get_platforms
-import subprocess
+import subprocess # nosec
 import pathlib
 import operator
-import subprocess
 from urllib.parse import urlparse
 
 class Execution(object):
@@ -48,6 +47,8 @@ class Execution(object):
         build_id = os.getenv("BUILD_ID","")
         performance = os.getenv("performance", 'false')
         items = session_id.split('_')
+        test_config = os.getenv("workload_test_config_yaml", '')
+        test_config = test_config if test_config else 'default'
 
         if len(items) == 5:
             wiki_platform_commit = items[-2]
@@ -101,7 +102,7 @@ class Execution(object):
                             cluster_type = cluster_type.split("-")[0]
                         logs_folder_name = "logs-" + case_name.split("test_")[-1]
                         test_platform = platform + '_' + cluster_type.upper()
-                        if cluster_type == 'baremetal':
+                        if cluster_type == 'baremetal' or cluster_type == 'static':
                             test_platform = platform
                         if cluster_type in ['aws', 'gcp', 'azure']:
                             test_platform = platform + '_' + cluster_type.upper()
@@ -173,7 +174,7 @@ class Execution(object):
 
         # get kpi info
         for root, dirs, files in os.walk(os.path.join(test_result_folder)):
-            if "pkb.log" in files:
+            if "pkb.log" in files or "tfplan.logs" in files:
                 folder_name = os.path.basename(root)
                 folder_list = root.split("/")
                 for folder in folder_list:
@@ -193,13 +194,13 @@ class Execution(object):
 
                 # get workload_params from cumulus-config.yaml
                 case_log_folder = root.split('runs')[0]
-                f = open("%s/cumulus-config.yaml" % case_log_folder , 'r')
+                f = open("%s/workload-config.yaml" % root, 'r')
                 result = f.read()
-                case_cumulus_config = yaml.safe_load(result)
-                case_sha256 = sha256(case_cumulus_config['docker_pt']['flags']['dpt_tunables'])
+                case_workload_config = yaml.safe_load(result)
+                case_sha256 = sha256(case_workload_config['tunables'])
 
                 test_platform = platform + '_' + cluster_type.upper()
-                if cluster_type == 'baremetal':
+                if cluster_type == 'baremetal' or cluster_type == 'static':
                     test_platform = platform
                 if cluster_type in ['aws', 'gcp', 'azure']:
                     test_platform = platform + '_' + cluster_type.upper()
@@ -209,10 +210,28 @@ class Execution(object):
                     test_platform = platform + '_AWS'
                 if cluster_type.lower() == 't4':
                     test_platform = platform + '_AWS'
+                if test_platform not in benchmark_execution_info['execution']:
+                    benchmark_execution_info['execution'][test_platform] = {}
+                    benchmark_execution_info['execution'][test_platform][workload] = {}
+                    benchmark_execution_info['execution'][test_platform][workload]['kpi'] = {}
+                    benchmark_execution_info['execution'][test_platform][workload]['bom'] = {}
+                    benchmark_execution_info['execution'][test_platform][workload]['Total'] = 0
+                    benchmark_execution_info['execution'][test_platform][workload]['Passed'] = 0
+                    benchmark_execution_info['execution'][test_platform][workload]['Failed'] = 0
+                    benchmark_execution_info['execution'][test_platform][workload]['Blocked'] = 0
+                    benchmark_execution_info['execution'][test_platform][workload]['Attempted'] = 0
+                    benchmark_execution_info['execution'][test_platform][workload]['No_Run'] = 0
+                    benchmark_execution_info['execution'][test_platform][workload]['all_test_case'] = []
+                    benchmark_execution_info['execution'][test_platform][workload]['passed_test_case'] = []
+                    benchmark_execution_info['execution'][test_platform][workload]['failed_test_case'] = []
+                    benchmark_execution_info['execution'][test_platform][workload]['no_run_test_case'] = []
                 pkb_log = os.path.join(root, 'pkb.log')
-                with open(pkb_log, "rt") as fh:
-                    content = fh.read()
-                run_url = re.findall("\'run_uri\'\:\s*\'(.*)\'", content)
+                if os.path.exists("%s/intel_publisher/perfKitRuns.json" % root):
+                    with open("%s/intel_publisher/perfKitRuns.json" % root, 'r') as fp:
+                        run_details = json.load(fp)
+                    run_uri = run_details['uri']
+                else:
+                    run_uri = ''
 
                 cmd = "cat %s | grep 'End to End Runtime' | grep seconds | awk '{print $5}'" % pkb_log
                 ret, output = execute_cmd(cmd)
@@ -225,10 +244,7 @@ class Execution(object):
                 if test_name not in benchmark_execution_info['execution'][test_platform][workload]['kpi'].keys():
                     benchmark_execution_info['execution'][test_platform][workload]['kpi'][test_name] = {}
                     benchmark_execution_info['execution'][test_platform][workload]['kpi'][test_name]['metrics'] = {}
-                if len(run_url) > 0:
-                    cumulus_url = "https://cumulus-dashboard.intel.com/services-framework/run_uri/%s" % run_url[0]
-                else:
-                    cumulus_url = ''
+                cumulus_url = "https://cumulus-dashboard.intel.com/services-framework/run_uri/%s" % run_uri
                 #benchmark_execution_info['execution'][test_platform][workload]['kpi'][test_name][
                 #    'cumulus_url'] = cumulus_url
                 benchmark_execution_info['execution'][test_platform][workload]['kpi'][test_name][
@@ -245,6 +261,7 @@ class Execution(object):
 
                 cumulus_config = os.path.join(test_result_folder, folder_name, 'cumulus-config.yaml')
                 benchmark_execution_info['execution'][test_platform][workload]['kpi'][test_name]['config'] = hw_config
+                benchmark_execution_info['execution'][test_platform][workload]['kpi'][test_name]['test_config'] = test_config
                 benchmark_execution_info['execution'][test_platform][workload]['kpi'][test_name][
                     'wiki_platform_version'] = wiki_platform_commit
 
@@ -301,7 +318,7 @@ class Execution(object):
                     if '-' in cluster_type:
                         cluster_type = cluster_type.split("-")[0]
                     test_platform = platform + '_' + cluster_type.upper()
-                    if cluster_type == 'baremetal':
+                    if cluster_type == 'baremetal' or cluster_type == 'static':
                         test_platform = platform
                     if cluster_type in ['aws', 'gcp', 'azure']:
                         test_platform = platform + '_' + cluster_type.upper()

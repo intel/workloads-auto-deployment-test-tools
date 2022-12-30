@@ -1,13 +1,13 @@
 from taas.settings import *
 
-DEBUG = True
+DEBUG = False
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'taas',
         'USER': 'postgres',
-        'PASSWORD': '#1Danger0us',
+        'PASSWORD': '',
         'HOST': 'db',
         'PORT': '5432',
     }

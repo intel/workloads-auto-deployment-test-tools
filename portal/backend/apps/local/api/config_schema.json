@@ -110,6 +110,9 @@
         "filter_case": {
             "type": "string"
         },
+        "workload_parameter": {
+            "type": "string"
+        },
         "softwarepackage": {
             "type": "string",
             "enum": ["true", "false"]
@@ -192,7 +195,7 @@
         }
     },
     "required": [
-        "deployHost", "platforms", "kubernetes_deploy", "kubernetesInstallMethod", "kubernetesArgs", "jenkins", "workloadName", "jsf_repo", "commit", "registry", "filter_case",
+        "deployHost", "platforms", "kubernetes_deploy", "kubernetesInstallMethod", "kubernetesArgs", "jenkins", "workloadName", "jsf_repo", "commit", "registry", "filter_case", "workload_parameter",
         "softwarepackage", "softwarepackageArgs", "system_deploy", "Kernel_update", "kernelVersion", "kernelArgs_update", "kernelArgs", "vm_deploy", "vm_docker", "vmosArgs", "sender", "receivers"
    ],
    "additionalProperties": false

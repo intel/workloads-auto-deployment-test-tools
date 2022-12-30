@@ -34,6 +34,7 @@ workloadName="{{.WorkloadName}}"
 jsfRepo="{{.JsfRepo}}"
 commit="{{.Commit}}"
 filterCase="{{.FilterCase}}"
+workloadParameter="{{.WorkloadParameter}}"
 registry="{{.Registry}}"
 platforms="{{.Platforms}}"
 

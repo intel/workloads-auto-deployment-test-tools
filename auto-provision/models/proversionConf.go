@@ -52,6 +52,7 @@ type ProversionConf struct {
 	JsfRepo                 string                `json:"jsf_repo"`
 	Commit                  string                `json:"commit"`
 	FilterCase              string                `json:"filter_case"`
+	WorkloadParameter       string                `json:"workload_parameter"`
 	Registry                string                `json:"registry"`
 	Platforms               string                `json:"platforms"`
 	SoftwarePackage         string                `json:"softwarepackage"`

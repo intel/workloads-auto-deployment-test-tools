@@ -18,12 +18,15 @@ class Master(yaml.YAMLObject):
 
 
 class Worker(yaml.YAMLObject):
-    def __init__(self, name, ip, user, hw_config, hw_info, port=22):
+    def __init__(self, name, ip, internal_ip, user, hw_config, hw_info, labels, port=22):
         self.ip = ip
+        if internal_ip:
+            self.internal_ip = internal_ip
         self.port = port
         self.user = user
         self.hw_config = hw_config
         self.hw_info = hw_info
+        self.labels = labels
 
 
 class Cluster(yaml.YAMLObject):
@@ -52,7 +55,7 @@ if __name__ == '__main__':
     workers_info = []
 
     response = requests.get(
-        url=get_instance_api, verify=False)
+        url=get_instance_api, verify="/home/cert.pem")
     machines = response.json()
     for machine in machines:
         # print(machine)
@@ -75,9 +78,14 @@ if __name__ == '__main__':
             'OS': 'CentOS Stream release 8',
             'Kernel': '5.15.0-spr.bkc.pc.2.10.0.x86_64',
             'Kubernetes': 'v1.21.1',
-            'Docker': '20.10.12'
+            'Docker': '20.10.12',
+            'Microcode': '0x8e0002a0',
+            'PCIE': 'GEN5',
+            'NIC': 'Ethernet Controller E810-C for QSFP',
+            'BOOT': 'INTEL SSD',
+            'Platform': '2S Archer City',
         }
-        worker = Worker('test', worker_info['ip'], worker_info['username'], hw_config, hw_info)
+        worker = Worker('test', worker_info['ip'], worker_info['internal_ip'], worker_info['username'], hw_config, hw_info, worker_info['labels'], worker_info['ssh_port'])
         workers.append({worker_name: worker})
         count = count + 1
 
