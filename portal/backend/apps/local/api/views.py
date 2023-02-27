@@ -145,6 +145,14 @@ class ProvisionAPIView(generics.CreateAPIView):
             filter_case = config.get('filter_case')
             job = LocalJob.objects.create(workload=workload,machines=machines,config=config_version,filter_case=filter_case, start_time=start_time, end_time=end_time, user=self.request.user.username)
             config["jobId"] = str(job.id)
+            video_download_link = "https://" + config["registry"].split(':')[0] + ':8899/local/media/'
+            videos = os.listdir(f'workspace/local/media')
+            if len(videos) != 0:
+                if len(config["workload_parameter"]) != 0:
+                    config["workload_parameter"] += " "
+                config["workload_parameter"] += "VIDEO_URL_PREFIX=" + video_download_link
+                config["workload_parameter"] += " " + "VIDEO_FILENAMES=" + ','.join(videos)
+                config["workload_parameter"] += " " + "INFERENCE_STREAMS=1"
             config_output = json.dumps(config)
             config_file_path = f'workspace/local/logs/{job.id}_config.json'
             if os.path.exists(config_file_path):
@@ -334,3 +342,28 @@ class GetConfigJsonAPIView(generics.CreateAPIView):
         except Exception as ex:
             return Response(f"Failed to get json: {ex}",
                             status=404)
+                            
+class UploadVideoCheck(generics.CreateAPIView):
+    serializer_class = SchedulerSerializer 
+    def post(self, request, *args, **kwargs):
+        try:
+            print(self.request.data)
+            video_files = self.request.FILES.getlist('files')
+            upload_video_path = f'workspace/local/media/'
+            
+            if not os.path.exists(upload_video_path):
+                os.mkdir(upload_video_path)
+            else:
+                shutil.rmtree(upload_video_path)
+                os.mkdir(upload_video_path) 
+                
+
+            for i, video_item in enumerate(video_files):
+                with open(upload_video_path+"upload_file_"+str(i)+".mp4", 'wb+') as f:
+                    for chunk in video_item.chunks():
+                        f.write(chunk)
+                    f.close()
+            return Response(f"Received successful", status=status.HTTP_200_OK)
+        except Exception as ex:
+            return Response(f"Failed to upload video file: {ex}",
+                            status=status.HTTP_400_BAD_REQUEST)

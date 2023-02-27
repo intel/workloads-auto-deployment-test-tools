@@ -91,6 +91,34 @@
               </div>
             </div>
           </div>
+          <div v-if="formData.selectedWorkloadName.name === '3DHuman-Pose-Estimation'" class="p-field p-col-6">
+            <h5>Upload video files</h5>
+            <el-upload
+            class="upload-demo"
+            ref="upload"
+            action=""
+            accept=".mp4"
+            :multiple="true"
+            :limit="5"
+            :file-list="fileList"
+            :auto-upload="false"
+            :on-change="handleChange"
+            :on-remove="handleRemove"
+            :on-exceed="handleExceed"
+            :on-progress="handleProgress">
+              <el-button slot="trigger" size="medium" type="primary">选取文件</el-button>
+              <div slot="tip" class="el-upload__tip">只能上传mp4文件，数量不能超过5个，且每个大小不超过1GB </div>
+              <div slot="tip" class="el-upload-list__item-name">{{fileName}}</div>
+              <el-button style="margin-left: 10px;" size="medium" type="success" @click="submitUpload">上传</el-button>
+              <el-dialog title="上传进度" :visible="dialog" append-to-body
+                :close-on-click-modal="false" :close-on-press-escape="false" :show-close="false">
+                <el-progress :percentage="progress"></el-progress>
+                  <p style="text-align: center; margin: 10px 0;">
+                    已上传大小：{{ loaded }}，总大小： {{total}} 
+                  </p>
+              </el-dialog>
+            </el-upload> 
+          </div>
           <div v-show="workload_package_args_show">
             <div class="p-formgroup-inline">
               <div class="p-field p-col-3">
@@ -142,6 +170,8 @@
 import Dropdown from 'primevue/dropdown'
 import MultiSelect from 'primevue/multiselect'
 import InputText from 'primevue/inputtext'
+import { CSRF_TOKEN } from '../../common/csrf_token'
+import axios from 'axios'
 export default {
   components: {
     Dropdown,
@@ -165,7 +195,12 @@ export default {
       selectedTaskPath: null,
       selectedPSFRepo: null,
       selectedWorkloadArgs: null,
-      height: this.formData.deploy_workload_args ? 700 : 400
+      height: this.formData.deploy_workload_args ? 700 : 400,
+      fileList: [],
+      dialog: false,
+      loaded: 0,
+      total: 0,
+      progress: 0
     }
   },
   props: {
@@ -183,6 +218,54 @@ export default {
       } else {
         this.height = 400
       }
+    },
+    handleChange(file, fileList) {
+      const isLt100M = fileList.every(file => file.size / 1024 / 1024  < 1024);
+      if (!isLt100M) {
+          this.$message.error('请检查, 上传单个文件大小不能超过1024MB!');
+          return false
+      }
+      this.fileList = fileList
+    },
+    handleRemove(files, fileList) {
+      this.fileList = fileList;
+    },
+    handleExceed(files, fileList) {
+      this.$message.warning('当前限制选择 5 个文件');
+    },
+    submitUpload() {
+      const endpoint = '/local/api/upload_video_check/'
+      let formData = new FormData();
+      this.fileList.forEach((file) => {
+        formData.append('files', file.raw)
+      })
+      this.dialog = true
+      this.progress = this.loaded = this.total = 0
+      const config = {
+        headers: {
+          'content-type': 'multipart/form-data',
+          'X-CSRFTOKEN': CSRF_TOKEN
+        },
+        onUploadProgress: pe => {
+          this.progress = Number.parseInt((pe.loaded / pe.total) * 100)
+          this.loaded = pe.loaded
+          this.total = pe.total
+        }
+      }
+      axios
+        .post(endpoint, formData, config)
+        .then(response => {
+          this.$message.success('上传成功')
+          this.$refs.upload.clearFiles()
+          this.progress = this.loaded = this.total = 0
+          this.dialog = false
+        })
+        .catch(e => {
+          this.$message.error('上传失败')
+          this.$refs.upload.clearFiles()
+          this.progress = this.loaded = this.total = 0
+          this.dialog = false
+        })
     }
   },
   watch: {

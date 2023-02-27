@@ -23,6 +23,9 @@ urlpatterns = [
         "provision/",
         ProvisionAPIView.as_view()),
     path(
+        "upload_video_check/",
+        UploadVideoCheck.as_view()),
+    path(
         "schedule_check/",
         ScheduleCheck.as_view()),
     path(

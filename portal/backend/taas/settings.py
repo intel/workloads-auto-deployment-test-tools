@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.join(BASE_DIR, 'backend/extra_apps'))
 SECRET_KEY = '1^f6s%w(0^3#@2%9e+v5q--5umw)2hy1rz+5sl149or2yspy@r'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
@@ -178,8 +178,8 @@ WEBPACK_LOADER = {
 LOG_FILE_DIR = os.path.join(BASE_DIR, 'backend/logs/')
 
 # Media
-MEDIA_URL = "/media/local/logs/"
-MEDIA_ROOT = "workspace/local/logs/"
+MEDIA_URL = "/local/media/"
+MEDIA_ROOT = "/backend/workspace/local/media"
 IMPORT_EXPORT_USE_TRANSACTIONS = True
 
 # django-crispy-forms
