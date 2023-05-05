@@ -56,3 +56,11 @@
 2.4.2 点击“Log”可实时查看任务执行状态
 
 ![](media/image14.png)
+
+## 附录
+
+如果当时使用的 Workload 为 Smart-Sport-Analyzer，则在 Provision 填写时 Workload Args 部分会出现 Upload video files 功能，提示上传视频文件。当按照要求选择文件并上传后，会提示上传进度。如下图所示 
+
+![](media/image15.png)
+
+注意：在使用该 Workload 时需要修改 `WSF-VAAS/portal/backend/taas/` 目录下 `settings_dev_docker.py`, `setting_dev.py` 以及 `setting.py` 文件中 `DEBUG = False` 改为 `DEBUG = True`。

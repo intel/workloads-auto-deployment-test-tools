@@ -93,6 +93,45 @@ class LocalJob(models.Model):
     class Meta:
         ordering = ['-id','status']
 
+class LocalJobTestResult(models.Model):
+    TEST_RESULT_CHOICES = [
+        ('PASS', 'PASS'),
+        ('FAILED', 'FAILED'),
+        ('NORUN', 'NORUN')
+    ]
+    TAG_CHOICES = [
+        ('PERFORMANCE', 'PERFORMANCE'),
+        ('VALIDATION', 'VALIDATION'),
+        ('FUNCTION', 'FUNCTION')
+    ]
+    workload = models.CharField(max_length=128, null=True, blank=True)
+    test_cycle = models.CharField(max_length=30, null=True, blank=True)
+    commit = models.CharField(max_length=30, null=True, blank=True)
+    infra_type = models.CharField(max_length=30, null=True, blank=True)
+    platform = models.CharField(max_length=30, null=True, blank=True)
+    test_case = models.CharField(max_length=128, null=True, blank=True)
+    kpi_key = models.CharField(max_length=256, null=True, blank=True)
+    kpi_value = models.CharField(max_length=50, null=True, blank=True)
+    test_time = models.CharField(max_length=50, null=True, blank=True)
+    instance_type = models.CharField(max_length=30, null=True, blank=True)
+    test_result = models.CharField(max_length=30, choices=TEST_RESULT_CHOICES, null=True, blank=True)
+    failed_reason = models.CharField(max_length=128, null=True, blank=True)
+    test_date = models.CharField(max_length=50, null=True, blank=True)
+    log_url = models.CharField(max_length=512, null=True, blank=True)
+    cumulus_uri = models.CharField(max_length=512, null=True, blank=True)
+    tag = models.CharField(max_length=512, choices=TAG_CHOICES, null=True, blank=True)
+    jenkins_job_id = models.CharField(max_length=30, null=True, blank=True)
+    job_id = models.CharField(max_length=30, null=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
+    itr = models.CharField(max_length=30, null=True, blank=True)
+    test_from = models.CharField(max_length=30, null=True, blank=True)
+
+    def __str__(self):
+        return f'{self.id}'
+
+    class Meta:
+        ordering = ['id']
 
 class Workload(models.Model):
     name = models.CharField(max_length=128, null=True, blank=True)

@@ -83,7 +83,8 @@ export default {
   data () {
     return {
       active: 0,
-      stepFormData: JSON.parse(JSON.stringify(stepFormData))
+      stepFormData: JSON.parse(JSON.stringify(stepFormData)),
+      errors: []
     }
   },
   methods: {
@@ -267,15 +268,15 @@ export default {
       if (this.stepFormData.selectedController != null) {
         for (var host of this.stepFormData.selectedController) {
           configsJson[deployHost].push({ name: 'controller', ansible_host: host.ip, ip: host.ip, username: host.username, hostname: host.hostname === null ? 'default' : host.hostname, password: host.password })
-          if (configsJson.platforms === null) {
-            configsJson.platforms = host.instance_type === 'CLX' ? 'ICX' : host.instance_type
-          }
         }
       }
       if (this.stepFormData.selectedWorker != null) {
         var count = 1
         for (host of this.stepFormData.selectedWorker) {
           configsJson[deployHost].push({ name: 'node' + String(count), ansible_host: host.ip, ip: host.ip, username: host.username, hostname: host.hostname === null ? 'default' : host.hostname, password: host.password })
+          if (configsJson.platforms === null) {
+            configsJson.platforms = host.instance_type === 'CLX' ? 'ICX' : host.instance_type
+          }
           count += 1
         }
       }

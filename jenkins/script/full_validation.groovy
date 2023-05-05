@@ -16,12 +16,14 @@ pipeline {
         label 'node1'
     }
   parameters {
+    string(name: 'front_job_id', defaultValue: '', description: 'Related job in frontend.')
     string(name: 'platforms', defaultValue: 'ICX', description: 'Run validation on specific platforms, separate with comma, e.g: SPR,ICX, default as null will run tests on all supported platforms.')
     string(name: 'sf_commit', defaultValue: 'main', description: '')
     string(name: 'repo', defaultValue: 'https://github.com/intel-innersource/applications.benchmarking.benchmark.external-platform-hero-features.git', description: 'github repo address')
     string(name: 'registry', defaultValue: '192.168.0.160:5000', description: 'docker registry')
     string(name: 'instance_api', defaultValue: 'https://127.0.0.1:8899/local/api/job/', description: 'frontend api')
     string(name: 'artifactory_url', defaultValue: 'http://127.0.0.1:8082/artifactory', description: 'artifactory url')
+    string(name: 'django_execution_result_url', defaultValue: 'https://127.0.0.1:8899/local/api/test_result/', description: 'store execution results')
     string(name: 'session', defaultValue: '', description: 'used for separate testing.')
     string(name: 'workload_list', defaultValue: '', description: 'separated with ";",e.g: BoringSSL;Bert-Large. Or Encode-3dnr;Nginx  This parameter must match with "customer"')
     choice(name: 'customer', choices: ['main', 'tencent', 'ali'], description: 'main stands for mainline workloads direct under workload folder not customer workloads')
@@ -71,6 +73,7 @@ pipeline {
                     }
 
                     build job:"image" , parameters:[
+                        [$class: "StringParameterValue", name: "front_job_id", value: "${env.front_job_id}"],
                         [$class: "StringParameterValue", name: "commit", value: "${env.sf_commit}"],
                         [$class: "StringParameterValue", name: "registry", value: "${env.registry}"],
                         [$class: "StringParameterValue", name: "platform", value: "${env.platforms}"],
@@ -133,13 +136,6 @@ pipeline {
 
                     def workloads = [:]
                     for (p in platforms) {
-                        def supported_platform = [:]
-                        sh "cd validation && rm -rf build && mkdir build && cd build && cmake -DPLATFORM=${p} -DREGISTRY=0.0.0.0:5000 -DBACKEND=cumulus ../"
-                        supported_platform = sh (
-                        script: 'cd validation/build && make help|grep bom_',
-                        returnStdout: true
-                        )
-
                         for (f in files) {
                             def fvar
                             fvar = "${f}".split("/")[-1]
@@ -148,11 +144,13 @@ pipeline {
 								stage("${pvar}/${fvar}") {
 									script {
 										build job:"benchmark" , parameters:[
+                                            [$class: "StringParameterValue", name: "front_job_id", value: "${env.front_job_id}"],
 											[$class: "StringParameterValue", name: "platform", value: "${pvar}"],
 											[$class: "StringParameterValue", name: "repo", value: "${env.repo}"],
 											[$class: "StringParameterValue", name: "registry", value: "${env.registry}"],
 											[$class: "StringParameterValue", name: "instance_api", value: "${env.instance_api}"],
 											[$class: "StringParameterValue", name: "artifactory_url", value: "${env.artifactory_url}"],
+                                            [$class: "StringParameterValue", name: "django_execution_result_url", value: "${env.django_execution_result_url}"],
 											[$class: "StringParameterValue", name: "commit_id", value: "${env.sf_commit}"],
 											[$class: "BooleanParameterValue", name: "emon", value: "${emon}"],
 											[$class: "BooleanParameterValue", name: "vm", value: "${vm}"],

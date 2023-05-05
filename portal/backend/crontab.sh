@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source /etc/profile
 TEST_PATH="/tmp"
 LOG_FILE="$TEST_PATH/crontab.log"
 touch $LOG_FILE

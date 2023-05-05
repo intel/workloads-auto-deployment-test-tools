@@ -29,9 +29,10 @@ prepare_build_terraform () {
     
     svr_info_value="--svrinfo"
     if [ "$svrinfo" == "false" ]; then svr_info_value="--svrinfo=false";fi
-
+    gprofiler_value=""
+    if [ "$gprofiler" == "true" ]; then gprofiler_value="--gprofiler";fi
     emon_value=""
-    if [ "$emon" == "true" ]; then emon_value="--emon";fi
+    if [ "$emon" == "true" ]; then emon_value="--emon --noemon_post_processing";fi
     
     if [ "$cumulus_tags" == "" ]
     then
@@ -45,12 +46,13 @@ prepare_build_terraform () {
     then
         collectd_info="--collectd"
     fi
-    intel_publish_info=""
+    # Need a default owner
+    intel_publish_info="--owner=vaas"
     if [ "true" == "$intel_publish" ]
     then
         intel_publish_info="--intel_publish --intel_publisher_mongodb_name=services-framework --owner=sf-post-silicon"
     fi
-    terraform_options="${tag} ${collectd_info} ${svr_info_value} ${emon_value} ${intel_publish_info}"
+    terraform_options="${tag} ${collectd_info} ${svr_info_value} ${emon_value} ${gprofiler_value} ${intel_publish_info}"
     if [ "$gated" == "true" ]; then terraform_options="--svrinfo=false ${emon_value} --owner=sf-post-silicon";fi
     if [ "$customer" == "tencent" ] || [ "ali" == "$customer" ]; then terraform_options="${svr_info_value} ${collectd_info} ${tag} ${emon_value} --owner=sf-post-silicon";fi
 
@@ -69,17 +71,17 @@ prepare_build_terraform () {
     run_str="\        run_uri=\$(cat \/proc\/sys\/kernel\/random\/uuid | cut -f5 -d-)"
     sed -i "/terraform\/shell.sh/i $run_str" $workload_dir/script/terraform/validate.sh
 
-    pkb_str="\$SCRIPT/terraform/shell.sh \${csp:-static} \"\${dk_options[@]}\" $network_option --name \$run_uri -v \$WORKSPACE:\$WORKSPACE -e debug=\$debug -e WORKSPACE=\$WORKSPACE -e workload=\$workload -e platform=\$platform -e run_on_specific_hw=\$run_on_specific_hw -e run_on_previous_hw=\$run_on_previous_hw -e emon=\$emon -e limited_node_number=\$limited_node_number -e build_id=\$BUILD_ID -e performance=\$performance  -e CTESTSH_OPTIONS=\"\$CTESTSH_OPTIONS\" -e st_options=\"\$st_options\" -e specified_node_number=\$specified_node_number -e owner=\$USER -e backend=\$backend -- python3 ${WORKSPACE}/script/jenkins/script/cluster.py \$CLUSTER_CONFIG \$TERRAFORM_CONFIG \$run_uri /tmp/pkb \"\$TERRAFORM_OPTIONS\" $gated "
+    pkb_str="\"\$PROJECTROOT\"/script/terraform/shell.sh \${csp:-static} \"\${dk_options[@]}\" $network_option --name \$run_uri -v \$WORKSPACE:\$WORKSPACE -e debug=\$debug -e WORKSPACE=\$WORKSPACE -e workload=\$workload -e platform=\$platform -e run_on_specific_hw=\$run_on_specific_hw -e run_on_previous_hw=\$run_on_previous_hw -e emon=\$emon -e limited_node_number=\$limited_node_number -e build_id=\$BUILD_ID -e performance=\$performance  -e CTESTSH_OPTIONS=\"\$CTESTSH_OPTIONS\" -e st_options=\"\$st_options\" -e specified_node_number=\$specified_node_number -e owner=\$USER -e backend=\$backend -- python3 ${WORKSPACE}/script/jenkins/script/cluster.py \$CLUSTER_CONFIG \$TERRAFORM_CONFIG \$run_uri /tmp/pkb \"\$TERRAFORM_OPTIONS\" $gated "
 
-    s0="s|\$SCRIPT/terraform/shell.sh .*|$pkb_str|"
+    s0="s|\"\$PROJECTROOT\"/script/terraform/shell.sh .*|$pkb_str|"
     sed -e "$s0" -i $workload_dir/script/terraform/validate.sh
     
     if [ "true" == "$baremetal" ] || [ "true" == "$gated" ]
     then
         # add variable json in terraform apply
-        tf_var="\  terraform plan -input=false -var-file=variable-values.json -out tfplan -no-color"
-        s0="s|terraform plan .*|$tf_var|"
-        sed -e "$s0" -i $workload_dir/script/terraform/script/start.sh
+        tf_var="\  terraform plan -var-file=variable-values.json"
+        s0="s|terraform plan (.*\&?)|$tf_var \1|"
+        sed -re "$s0" -i $workload_dir/script/terraform/script/start.sh
         tf_destroy="\    TF_LOG=ERROR terraform destroy -var-file=variable-values.json -auto-approve -input=false -no-color -parallelism=1"
         s0="s|.* terraform destroy .*|$tf_destroy|"
         sed -e "$s0" -i $workload_dir/script/terraform/script/start.sh
@@ -154,13 +156,64 @@ prepare_build_terraform () {
         cp $workload_dir/terraform/terraform-config.-t4.tf $workload_dir/script/terraform/terraform-config.-t4.tf
         cp -rf ~/.aws $workload_dir/script/csp/
     fi
+    make_needed=false
+    make_sut_option=""
+    #mcnat only
+    if [[ $specific_sut == *"mcnat"* ]]
+    then
+        make_needed=true
+        aws="false"
+        gcp="false"
+        azure="false"
+        IFS=" "
+        make_sut_option=()
+        terraform_options=$(echo $terraform_options | sed 's/--owner=\S*/--owner=mcnat/')
+        read -r -a array <<< "$specific_sut"
+        for i in "${!array[@]}"; do
+            if [ "-mcnat-aws" == "${array[$i]}" ]
+            then
+                config=${aws_machine_type//./-}
+                cp $workload_dir/terraform/terraform-config.-mcnat-aws.tf $workload_dir/script/terraform/terraform-config.-mcnat-aws-$config.tf
+                cp -rf ~/.aws $workload_dir/script/csp/
+                sed -i "/ SUT /s/-mcnat-aws/-mcnat-aws-$config/g" $workload_dir/workload/$workload/CMakeLists.txt
+                [ -d $workload_dir/workload/$workload/cmake/ ] && sed -i "/ SUT /s/-mcnat-aws/-mcnat-aws-$config/g" $workload_dir/workload/$workload/cmake/*.cmake
+                if [ $aws_machine_type ] ; then cloud_overwrite_setting+=(--set AWS_WORKER_INSTANCE_TYPE=$aws_machine_type --set AWS_MACHINE_TYPE=$aws_machine_type); fi
+                if [ $aws_zone ] ; then cloud_overwrite_setting+=(--set AWS_ZONE=$aws_zone --set AWS_REGION=${aws_zone:0:-1}); fi
+                sed -i "s/region = .*/region = ${aws_zone:0:-1}/g" $workload_dir/script/csp/.aws/config
+                make_sut_option+=(-mcnat-aws-$config)
+            elif [ "-mcnat-gcp" == "${array[$i]}" ]
+            then
+                config=${gcp_machine_type}
+                cp $workload_dir/terraform/terraform-config.-mcnat-gcp.tf $workload_dir/script/terraform/terraform-config.-mcnat-gcp-$gcp_machine_type.tf
+                cp -rf ~/.config $workload_dir/script/csp/
+                sed -i "s/region = .*/region = ${gcp_zone}/g" $workload_dir/script/csp/.config/gcloud/configurations/config_default
+                sed -i "s/zone = .*/zone = ${gcp_zone:0:-2}/g" $workload_dir/script/csp/.config/gcloud/configurations/config_default
+                sed -i "/ SUT /s/-mcnat-gcp/-mcnat-gcp-$config/g" $workload_dir/workload/$workload/CMakeLists.txt
+                [ -d $workload_dir/workload/$workload/cmake/ ] && sed -i "/ SUT /s/-mcnat-gcp/-mcnat-gcp-$config/g" $workload_dir/workload/$workload/cmake/*.cmake
+                if [ $gcp_machine_type ] ; then cloud_overwrite_setting+=(--set GCP_WORKER_INSTANCE_TYPE=$gcp_machine_type --set GCP_MACHINE_TYPE=$gcp_machine_type); fi
+                if [ $gcp_zone ] ; then cloud_overwrite_setting+=(--set GCP_ZONE=$gcp_zone --set GCP_REGION=${gcp_zone:0:-2}); fi
+                make_sut_option+=(-mcnat-gcp-$gcp_machine_type)
+            else
+                config=${azure_machine_type//_/-}
+                cp $workload_dir/terraform/terraform-config.-mcnat-azure.tf $workload_dir/script/terraform/terraform-config.-mcnat-azure-$config.tf
+                cp -rf ~/.azure $workload_dir/script/csp/
+                sed -i "/ SUT /s/-mcnat-azure/-mcnat-azure-$config/g" $workload_dir/workload/$workload/CMakeLists.txt
+                [ -d $workload_dir/workload/$workload/cmake/ ] && sed -i "/ SUT /s/-mcnat-azure/-mcnat-azure-$config/g" $workload_dir/workload/$workload/cmake/*.cmake
+                if [ $azure_machine_type ] ; then cloud_overwrite_setting+=(--set AZURE_WORKER_INSTANCE_TYPE=$azure_machine_type --set AZURE_MACHINE_TYPE=$azure_machine_type); fi
+                if [ $azure_zone ] ; then cloud_overwrite_setting+=(--set AZURE_ZONE=$azure_zone --set AZURE_REGION=${azure_zone:0:-2}); fi
+                make_sut_option+=(-mcnat-azure-$config)
+            fi
+        done
+        make_sut_option="-DTERRAFORM_SUT='${make_sut_option[@]}'" 
+    fi
+    #non-mcnat 
     if [ "true" == "$aws" ]
     then
         config=${aws_machine_type//./-}
         cp $workload_dir/terraform/terraform-config.aws.tf $workload_dir/script/terraform/terraform-config.aws-$config.tf
         cp -rf ~/.aws $workload_dir/script/csp/
-        sed -i "s/SUT aws/SUT aws-$config/g" $workload_dir/workload/$workload/CMakeLists.txt
-        sed -i "s/SUT \"aws\"/SUT aws-$config/g" $workload_dir/workload/$workload/CMakeLists.txt
+        sed -i "/ SUT /s/aws/aws-$config/g" $workload_dir/workload/$workload/CMakeLists.txt
+        [ -d $workload_dir/workload/$workload/cmake/ ] && sed -i "/ SUT /s/aws/aws-$config/g" $workload_dir/workload/$workload/cmake/*.cmake
         k8s_registry_storage="s|# k8s_registry_storage:.*|k8s_registry_storage: \"aws\",|"
         k8s_registry_aws_storage_bucket="s|# k8s_registry_aws_storage_bucket:.*|k8s_registry_aws_storage_bucket: \"cumulus\",|"
         k8s_registry_aws_storage_region="s|# k8s_registry_aws_storage_region:.*|k8s_registry_aws_storage_region: \"us-east-2\",|"
@@ -168,49 +221,70 @@ prepare_build_terraform () {
         sed -e "$k8s_registry_aws_storage_bucket" -i $workload_dir/script/terraform/terraform-config.aws-$config.tf
         sed -e "$k8s_registry_aws_storage_region" -i $workload_dir/script/terraform/terraform-config.aws-$config.tf
 	if [ $aws_machine_type ] ; then cloud_overwrite_setting+=(--set AWS_WORKER_INSTANCE_TYPE=$aws_machine_type --set AWS_MACHINE_TYPE=$aws_machine_type); fi
-        if [ $aws_zone ] ; then cloud_overwrite_setting+=(--set AWS_ZONE=$aws_zone); fi
+        if [ $aws_zone ] ; then cloud_overwrite_setting+=(--set AWS_ZONE=$aws_zone --set AWS_REGION=${aws_zone:0:-1}); fi
+        if [ $aws_client_machine_type ] ; then cloud_overwrite_setting+=(--set AWS_CLIENT_INSTANCE_TYPE=$aws_client_machine_type); fi
 	if [ $boot_disk_size ] ; then cloud_overwrite_setting+=(--set AWS_WORKER_OS_DISK_SIZE=$boot_disk_size); fi
     fi
     if [ "true" == "$azure" ]
     then
         config=${azure_machine_type//_/-}
+	sed -i "/ SUT /s/azure/azure-$config/g" $workload_dir/workload/$workload/CMakeLists.txt
+        [ -d $workload_dir/workload/$workload/cmake/ ] && sed -i "/ SUT /s/azure/azure-$config/g" $workload_dir/workload/$workload/cmake/*.cmake
         cp $workload_dir/terraform/terraform-config.azure.tf $workload_dir/script/terraform/terraform-config.azure-$config.tf
         cp -rf ~/.azure $workload_dir/script/csp/
 	if [ $azure_machine_type ] ; then cloud_overwrite_setting+=(--set AZURE_WORKER_INSTANCE_TYPE=$azure_machine_type --set AZURE_MACHINE_TYPE=$azure_machine_type); fi
-        if [ $azure_zone ] ; then cloud_overwrite_setting+=(--set AZURE_ZONE=$azure_zone); fi
+        if [ $azure_zone ] ; then cloud_overwrite_setting+=(--set AZURE_ZONE=$azure_zone --set AZURE_REGION=${azure_zone:0:-2}); fi
+        if [ $azure_client_machine_type ] ; then cloud_overwrite_setting+=(--set AZURE_CLIENT_INSTANCE_TYPE=$azure_client_machine_type); fi
 	if [ $boot_disk_size ] ; then cloud_overwrite_setting+=(--set AZURE_WORKER_OS_DISK_SIZE=$boot_disk_size); fi
     fi
     if [ "true" == "$gcp" ]
     then
         cp $workload_dir/terraform/terraform-config.gcp.tf $workload_dir/script/terraform/terraform-config.gcp-$gcp_machine_type.tf
+        config=${gcp_machine_type}
+        sed -i "/ SUT /s/gcp/gcp-$config/g" $workload_dir/workload/$workload/CMakeLists.txt
+        [ -d $workload_dir/workload/$workload/cmake/ ] && sed -i "/ SUT /s/gcp/gcp-$config/g" $workload_dir/workload/$workload/cmake/*.cmake
         cp -rf ~/.config $workload_dir/script/csp/
 	if [ $gcp_machine_type ] ; then cloud_overwrite_setting+=(--set GCP_WORKER_INSTANCE_TYPE=$gcp_machine_type --set GCP_MACHINE_TYPE=$gcp_machine_type); fi
-        if [ $gcp_zone ] ; then cloud_overwrite_setting+=(--set GCP_ZONE=$gcp_zone); fi
+        if [ $gcp_zone ] ; then cloud_overwrite_setting+=(--set GCP_ZONE=$gcp_zone --set GCP_REGION=${gcp_zone:0:-2}); fi
+        if [ $gcp_client_machine_type ] ; then cloud_overwrite_setting+=(--set GCP_CLIENT_INSTANCE_TYPE=$gcp_client_machine_type); fi
 	if [ $boot_disk_size ] ; then cloud_overwrite_setting+=(--set GCP_WORKER_OS_DISK_SIZE=$boot_disk_size); fi
     fi
     if [ "true" == "$vsphere" ]
     then
         cp $workload_dir/terraform/terraform-config.vsphere.tf $workload_dir/script/terraform/terraform-config.vsphere-$vsphere_machine_type.tf
+        config=${vsphere_machine_type}
+        sed -i "/ SUT /s/vsphere/vsphere-$config/g" $workload_dir/workload/$workload/CMakeLists.txt
+        [ -d $workload_dir/workload/$workload/cmake/ ] && sed -i "/ SUT /s/vsphere/vsphere-$config/g" $workload_dir/workload/$workload/cmake/*.cmake
         cp -rf ~/.vsphere $workload_dir/script/csp/
 	if [ $vsphere_machine_type ] ; then cloud_overwrite_setting+=(--set VSPHERE_WORKER_INSTANCE_TYPE=$vsphere_machine_type --set VSPHERE_MACHINE_TYPE=$vsphere_machine_type); fi
+        if [ $vsphere_client_machine_type ] ; then cloud_overwrite_setting+=(--set VSPHERE_CLIENT_INSTANCE_TYPE=$vsphere_client_machine_type); fi
     fi
     if [ "true" == "$tencent" ]
     then
         config=${tencent_machine_type//./-}
+        sed -i "/ SUT /s/tencent/tencent-$config/g" $workload_dir/workload/$workload/CMakeLists.txt
+        [ -d $workload_dir/workload/$workload/cmake/ ] && sed -i "/ SUT /s/tencent/tencent-$config/g" $workload_dir/workload/$workload/cmake/*.cmake
         cp $workload_dir/terraform/terraform-config.tencent.tf $workload_dir/script/terraform/terraform-config.tencent-$config.tf
         cp -rf ~/.tccli $workload_dir/script/csp/
 	if [ $tencent_machine_type ] ; then cloud_overwrite_setting+=(--set TENCENT_WORKER_INSTANCE_TYPE=$tencent_machine_type --set TENCENT_MACHINE_TYPE=$tencent_machine_type); fi
-        if [ $tencent_zone ] ; then cloud_overwrite_setting+=(--set TENCENT_ZONE=$tencent_zone); fi
+        if [ $tencent_zone ] ; then cloud_overwrite_setting+=(--set TENCENT_ZONE=$tencent_zone --set TENCENT_REGION=${tencent_zone:0:-2}); fi
+        if [ $tencent_client_machine_type ] ; then cloud_overwrite_setting+=(--set TENCENT_CLIENT_INSTANCE_TYPE=$tencent_client_machine_type); fi
+        if [ $tencent_controller_machine_type ] ; then cloud_overwrite_setting+=(--set TENCENT_CONTROLLER_INSTANCE_TYPE=$tencent_controller_machine_type); fi
 	if [ $boot_disk_size ] ; then cloud_overwrite_setting+=(--set TENCENT_WORKER_OS_DISK_SIZE=$boot_disk_size); fi
     fi
     if [ "true" == "$ali" ]
     then
         config=${ali_machine_type//./-}
+        sed -i "/ SUT /s/alicloud/alicloud-$config/g" $workload_dir/workload/$workload/CMakeLists.txt
+        [ -d $workload_dir/workload/$workload/cmake/ ] && sed -i "/ SUT /s/alicloud/alicloud-$config/g" $workload_dir/workload/$workload/cmake/*.cmake
         cp $workload_dir/terraform/terraform-config.alicloud.tf $workload_dir/script/terraform/terraform-config.alicloud-$config.tf
         cp -rf ~/.aliyun $workload_dir/script/csp/
 	if [ $ali_machine_type ] ; then cloud_overwrite_setting+=(--set ALICLOUD_WORKER_INSTANCE_TYPE=$ali_machine_type --set ALICLOUD_MACHINE_TYPE=$ali_machine_type); fi
-        if [ $ali_zone ] ; then cloud_overwrite_setting+=(--set ALICLOUD_ZONE=$ali_zone); fi
+        if [ $ali_zone ] ; then cloud_overwrite_setting+=(--set ALICLOUD_ZONE=$ali_zone --set ALICLOUD_REGION=${ali_zone:0:-2}); fi
+        if [ $ali_client_machine_type ] ; then cloud_overwrite_setting+=(--set ALICLOUD_CLIENT_INSTANCE_TYPE=$ali_client_machine_type); fi
+        if [ $ali_controller_machine_type ] ; then cloud_overwrite_setting+=(--set ALICLOUD_CONTROLLER_INSTANCE_TYPE=$ali_controller_machine_type); fi
 	if [ $boot_disk_size ] ; then cloud_overwrite_setting+=(--set ALICLOUD_WORKER_OS_DISK_SIZE=$boot_disk_size); fi
+    
     fi
     if [ "SPR" == "$platform" ] && [ "true" == "$vm" ]
     then
@@ -234,8 +308,13 @@ prepare_build_terraform () {
         commit="ext_"$commit
     fi
     echo ${cloud_overwrite_setting[@]} > ${WORKSPACE}/cloud_setting
-    echo cmake -DPLATFORM=$platform -DRELEASE=:$commit -DACCEPT_LICENSE=ALL -DBACKEND=terraform -DTERRAFORM_OPTIONS="'$terraform_options'" -DREGISTRY=$registry -DTIMEOUT=$timeout ../
-    cd "$workload_dir/build" && cmake -DPLATFORM=$platform -DRELEASE=:$commit -DACCEPT_LICENSE=ALL -DBACKEND=terraform -DTERRAFORM_OPTIONS="'$terraform_options'" -DREGISTRY=$registry -DTIMEOUT=$timeout ../
+    echo "cloud setting is ${cloud_overwrite_setting[@]}"
+    echo cmake -DPLATFORM=$platform $make_sut_option -DRELEASE=:$commit -DACCEPT_LICENSE=ALL -DBACKEND=terraform -DBENCHMARK='' -DTERRAFORM_OPTIONS="'$terraform_options'" -DREGISTRY=$registry -DTIMEOUT=$timeout ../
+    cd "$workload_dir/build" && cmake -DPLATFORM=$platform "$make_sut_option" -DRELEASE=:$commit -DACCEPT_LICENSE=ALL -DBACKEND=terraform -DBENCHMARK='' -DTERRAFORM_OPTIONS="'$terraform_options'" -DREGISTRY=$registry -DTIMEOUT=$timeout ../
+    if [ $make_needed == "true" ]
+    then
+        cd $workload_dir/build/workload/$workload && make
+    fi
 }
 
 get_bom () {

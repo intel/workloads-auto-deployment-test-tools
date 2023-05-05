@@ -49,6 +49,8 @@ def run_benchmark(session, workload, platform, gated, commit):
 
 def create_artifacts(session, workload, platform, gated):
     final_config = ''
+    front_job_id = os.getenv("front_job_id", "")
+    store_url = os.getenv("django_execution_result_url", "")
     if gated == 'false':
         #create artifacts
         cmd = "%s/workload.sh artifacts %s" % (SCRIPT_PATH, workload)
@@ -70,7 +72,8 @@ def create_artifacts(session, workload, platform, gated):
             logging.info(e)
         # generate execution info
         benchmark_execution = Execution()
-        benchmark_execution.generate_benchmark_execution_info(session, platform, workload, final_config)
+        benchmark_execution_info = benchmark_execution.generate_benchmark_execution_info(session, platform, workload, final_config)
+        benchmark_execution.store_benchmark_execution_info(benchmark_execution_info, front_job_id, platform, workload, store_url)
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:

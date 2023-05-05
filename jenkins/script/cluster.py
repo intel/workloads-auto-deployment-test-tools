@@ -7,7 +7,7 @@ import yaml
 import sys
 import json
 import random
-from utils import clean_collectd_and_namespace, get_available_cluster, get_single_cluster, get_single_worker
+from utils import get_available_cluster, get_single_cluster, get_single_worker
 import re
 
 if (os.getenv('debug', '') == "true"):

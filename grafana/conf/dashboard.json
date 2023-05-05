@@ -1,0 +1,217 @@
+{
+    "dashboard": {
+        "editable": true,
+        "fiscalYearStartMonth": 0,
+        "graphTooltip": 0,
+        "links": [
+            {
+                "asDropdown": false,
+                "icon": "external link",
+                "includeVars": false,
+                "keepTime": false,
+                "tags": [],
+                "targetBlank": false,
+                "title": "To_Cloud",
+                "tooltip": "",
+                "type": "dashboards",
+                "url": ""
+            }
+        ],
+        "liveNow": false,
+        "panels": [
+            {
+                "datasource": {
+                    "type": "postgres",
+                    "uid": "old_uid"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "axisSoftMin": 0,
+                        "fillOpacity": 80,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                        "legend": false,
+                        "tooltip": false,
+                        "viz": false
+                        },
+                        "lineWidth": 1,
+                        "scaleDistribution": {
+                        "type": "linear"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                        {
+                            "color": "green",
+                            "value": null
+                        },
+                        {
+                            "color": "green",
+                            "value": 80
+                        }
+                        ]
+                    }
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 17,
+                    "w": 24,
+                    "x": 0,
+                    "y": 0
+                },
+                "id": 28,
+                "options": {
+                    "barRadius": 0,
+                    "barWidth": 0.22,
+                    "groupWidth": 0.7,
+                    "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom"
+                    },
+                    "orientation": "auto",
+                    "showValue": "auto",
+                    "stacking": "none",
+                    "text": {},
+                    "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                    },
+                    "xTickLabelRotation": 0,
+                    "xTickLabelSpacing": 0
+                },
+                "targets": [
+                    {
+                    "datasource": {
+                        "type": "postgres",
+                        "uid": "old_uid"
+                    },
+                    "format": "table",
+                    "group": [],
+                    "metricColumn": "none",
+                    "rawQuery": true,
+                    "rawSql": "SELECT\n  platform,\n  cast(kpi_value as NUMERIC) as \"KPI\"\nfrom\n  local_localjobtestresult\nwhere test_case='$testcase'",
+                    "refId": "A",
+                    "select": [
+                        [
+                        {
+                            "params": [
+                            "value_double"
+                            ],
+                            "type": "column"
+                        }
+                        ]
+                    ],
+                    "table": "test_data",
+                    "timeColumn": "time_date_time",
+                    "timeColumnType": "timestamp",
+                    "where": [
+                        {
+                        "name": "$__timeFilter",
+                        "params": [],
+                        "type": "macro"
+                        }
+                    ]
+                    }
+                ],
+                "title": "$workload[$kpi_key]",
+                "type": "barchart"
+            }
+        ],
+        "refresh": false,
+        "schemaVersion": 36,
+        "tags": [],
+        "templating": {
+            "list": [
+                {
+                    "current": {
+                    "selected": true,
+                    "text": "Kafka",
+                    "value": "Kafka"
+                    },
+                    "datasource": {
+                    "type": "postgres",
+                    "uid": "old_uid"
+                    },
+                    "definition": "SELECT DISTINCT workload FROM local_localjobtestresult",
+                    "hide": 0,
+                    "includeAll": false,
+                    "multi": false,
+                    "name": "workload",
+                    "options": [],
+                    "query": "SELECT DISTINCT workload FROM local_localjobtestresult",
+                    "refresh": 1,
+                    "regex": "",
+                    "skipUrlSync": false,
+                    "sort": 0,
+                    "type": "query"
+                },
+                {
+                    "current": {
+                    "selected": false,
+                    "text": "baremetal_kafka_1n",
+                    "value": "baremetal_kafka_1n"
+                    },
+                    "datasource": {
+                    "type": "postgres",
+                    "uid": "old_uid"
+                    },
+                    "definition": "SELECT test_case FROM local_localjobtestresult WHERE workload='$workload'",
+                    "hide": 0,
+                    "includeAll": false,
+                    "multi": false,
+                    "name": "testcase",
+                    "options": [],
+                    "query": "SELECT test_case FROM local_localjobtestresult WHERE workload='$workload'",
+                    "refresh": 1,
+                    "regex": "",
+                    "skipUrlSync": false,
+                    "sort": 0,
+                    "type": "query"
+                },
+                {
+                    "current": {
+                    "selected": false,
+                    "text": "Maximum Throughput (MB/s)",
+                    "value": "Maximum Throughput (MB/s)"
+                    },
+                    "datasource": {
+                    "type": "postgres",
+                    "uid": "old_uid"
+                    },
+                    "definition": "SELECT DISTINCT kpi_key FROM local_localjobtestresult",
+                    "hide": 2,
+                    "includeAll": false,
+                    "multi": false,
+                    "name": "kpi_key",
+                    "options": [],
+                    "query": "SELECT DISTINCT kpi_key FROM local_localjobtestresult",
+                    "refresh": 1,
+                    "regex": "",
+                    "skipUrlSync": false,
+                    "sort": 0,
+                    "type": "query"
+                }
+            ]
+        },
+        "time": {
+            "from": "now-30d",
+            "to": "now"
+        },
+        "timepicker": {},
+        "timezone": "utc",
+        "title": "WSF_TestResult",
+        "uid": "old_uid",
+        "version": 3,
+        "weekStart": ""
+    }
+}

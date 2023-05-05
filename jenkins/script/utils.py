@@ -2,7 +2,6 @@
 import paramiko
 import subprocess # nosec
 import logging
-from lxml import html
 import os
 import hashlib
 import yaml
@@ -33,71 +32,6 @@ def execute_cmd(cmd):
     output, err = p.communicate()
     status = 1 if err else 0
     return status, output
-
-def execute_remote_cmd(ip, user, key, cmd, port):
-    """
-    execute command on remote host using local key
-    :param ip:
-    :param key:
-    :param cmd:
-    :param port:
-    :return:
-    """
-    try:
-        ssh = paramiko.SSHClient()
-        # add to host_allow
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        pkey = paramiko.RSAKey.from_private_key_file(key)
-        ssh.connect(hostname=ip,
-                    port=port,
-                    username=user,
-                    pkey=pkey)
-        stdin, stdout, stderr = ssh.exec_command(cmd)
-        output = stdout.read().decode('utf-8')
-        ssh.close()
-        return output
-    except Exception as e:
-        logging.warning(e)
-
-def clean_collectd_and_namespace(controller_ip, controller_user, controller_port, worker_ip, worker_user,
-                                 worker_port, namespace_user):
-    """
-    make sure all collectd processes and previous canceled namespace are cleaned before running cumulus
-    :param controller_ip: k8s master ip
-    :param controller_user: k8s master ssh user
-    :param controller_port: k8s master ssh port
-    :param worker_ip: k8s worker ip
-    :param worker_user: k8s worker ssh user
-    :param worker_port: k8s worker ssh port
-    :param namespace_user: namespace name start user.
-    :return:
-    """
-    key = '/home/.ssh/id_rsa'
-    cmd = 'ps -ef |grep collectd |grep -v grep |wc -l'
-    collectd_count = execute_remote_cmd(worker_ip, worker_user, key, cmd, worker_port)
-    if collectd_count:
-        if int(collectd_count) > 0:
-            cmd = "ps -ef |grep collectd |grep -v grep|awk '{print $2}'"
-            collectd_ids = execute_remote_cmd(worker_ip, worker_user, key, cmd, worker_port)
-            for id in collectd_ids.split('\n'):
-                if id != '':
-                    kill_cmd = 'sudo kill -9 %s & wait $!' % id
-                    execute_remote_cmd(worker_ip, worker_user, key, kill_cmd, worker_port)
-
-    namespace_list = execute_remote_cmd(controller_ip, controller_user, key, "kubectl get ns | awk '{print $1}'",
-                                        controller_port)
-
-    for ns in namespace_list.split('\n'):
-        if ns != 'NAME':
-            if ns.startswith(namespace_user + '-'):
-                logging.info(ns)
-                cmd = "kubectl get pods -n %s -o wide|grep `kubectl  get nodes -o wide | grep %s | awk '{print $1}'`|wc -l" % (
-                ns, worker_ip)
-                old_pod_number = execute_remote_cmd(controller_ip, controller_user, key, cmd, controller_port)
-                old_pod_number = old_pod_number.split('\n')[0]
-                if int(old_pod_number) > 0:
-                    cmd = "kubectl delete ns %s & wait $!" % ns
-                    execute_remote_cmd(controller_ip, controller_user, key, cmd, controller_port)
 
 def get_platforms(run_folder):
     """

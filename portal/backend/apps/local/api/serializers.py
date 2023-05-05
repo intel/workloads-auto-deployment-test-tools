@@ -15,7 +15,12 @@ class LocalJobSerializer(serializers.ModelSerializer):
         model = LocalJob
         fields = '__all__'
 
+class LocalJobTestResultSerializer(serializers.ModelSerializer):
 
+    class Meta:
+        model = LocalJobTestResult
+        fields = '__all__'
+        
 class WorkloadSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -62,6 +67,10 @@ class LocalInstanceJobQueueSerializer(serializers.ModelSerializer):
         model = LocalInstanceJobQueue
         fields = '__all__'
 
+class LocalSettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LocalSetting
+        fields = ['name', 'value']
 
 class ProvisionParameterSerializer(serializers.ModelSerializer):
     class Meta:

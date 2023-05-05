@@ -1,3 +1,5 @@
+# WSF-VaaS
+
 ## Introduction
 
 This tool provides the ability to configure and run WSF workload automatically, the configuration contains: Kubernetes installation, Kernel update, Kernel arguments update.
@@ -18,13 +20,12 @@ Refer to the directory "doc"
 
 ## Release note
 What is new in this release:
-- This tool is production release now
-- Changes WSF backend from cumulus to terraform
+- Added grafana dashboard to show execution status
+- Released upgrade documentation
 - Supports WSF new released workloads 
 
 Release Impact 
 - In network that could not access to internet need extra offline installation effort to initial this tool  
 
-Known issue
-- KVM installation function is not fully ready
-- K8s installation may fail on some un-clean CentOS environment
+Upcoming Release
+- Support staging folder to allow user to run customized workloads

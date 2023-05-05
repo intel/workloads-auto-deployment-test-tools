@@ -37,6 +37,9 @@ class ProvisonParameterValueAdmin(ImportExportModelAdmin):
 class LocalSettingAdmin(ImportExportModelAdmin):
     list_display = [field.name for field in LocalSetting._meta.fields]
 
+class LocalTestResultAdmin(ImportExportModelAdmin):
+    list_display = [field.name for field in LocalJobTestResult._meta.fields]
+
 admin.site.register(LocalInstance, LocalInstanceAdmin)
 admin.site.register(LocalInstanceJobQueue, LocalInstanceJobQueueAdmin)
 admin.site.register(LocalJob, JobAdmin)
@@ -48,3 +51,4 @@ admin.site.register(ComponentVersion, ComponentVersionAdmin)
 admin.site.register(Component, ComponentAdmin)
 admin.site.register(Workload, WorkloadAdmin)
 admin.site.register(ProvisonParameterValue,ProvisonParameterValueAdmin)
+admin.site.register(LocalJobTestResult,LocalTestResultAdmin)

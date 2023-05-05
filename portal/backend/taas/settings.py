@@ -178,8 +178,8 @@ WEBPACK_LOADER = {
 LOG_FILE_DIR = os.path.join(BASE_DIR, 'backend/logs/')
 
 # Media
-MEDIA_URL = "/media/local/logs/"
-MEDIA_ROOT = "workspace/local/logs/"
+MEDIA_URL = "/local/media/"
+MEDIA_ROOT = "/backend/workspace/local/media"
 IMPORT_EXPORT_USE_TRANSACTIONS = True
 
 # django-crispy-forms

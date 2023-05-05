@@ -11,6 +11,7 @@ pipeline {
         label 'node1'
     }
     parameters {
+        string(name: 'front_job_id', defaultValue: '', description: 'Related Job in frontend.')
         string(name: 'workload', defaultValue: 'Kafka', description: '')
         string(name: 'platform', defaultValue: 'ICX', description: '')
         string(name: 'session', defaultValue: '', description: 'session id for full validation, combination with "date"_"full validation job id"_"wiki commit"_"cumulus commit"_"repo commit", for manual run, use "repo commit" is enough')
@@ -18,6 +19,7 @@ pipeline {
         string(name: 'registry', defaultValue: '127.0.0.1:5000', description: 'docker registry')
         string(name: 'instance_api', defaultValue: 'https://127.0.0.1:8899/local/api/instance/', description: 'get instance list api')
         string(name: 'artifactory_url', defaultValue: 'http://127.0.0.1:8082/artifactory', description: 'artifactory url')
+        string(name: 'django_execution_result_url', defaultValue: 'https://127.0.0.1:8899/local/api/test_result/', description: 'store execution results')
         string(name: 'commit_id', defaultValue: 'main', description: 'commit id of the provided repo, also could be branch name')
         booleanParam(name: 'emon', defaultValue: '', description: '')
         string(name: 'timeout', defaultValue: '60000,3600', description: 'timeout for execution, first one is for pod execution timeout, second one is for pod ready timeout.')
@@ -35,7 +37,7 @@ pipeline {
         choice(name: 'customer', choices: ['main', 'tencent', 'ali'], description: 'main stands for mainline workloads direct under workload folder not customer workloads')
         string(name: 'cluster_file', defaultValue: 'cluster.yaml', description: 'To use different cluster.yaml file in artifactory')
         string(name: 'limited_node_number', defaultValue: '4', description: 'Limit some cases execute if their required nodes are greater than the specified value, and mark them as no_run.')
-        string(name: 'parallel_run_case_number', defaultValue: '', description: 'Specifies the number of cases to run in parallel during the workload validation.')
+        string(name: 'parallel_run_case_number', defaultValue: '1', description: 'Specifies the number of cases to run in parallel during the workload validation.')
         string(name: 'controller_ip', defaultValue: '', description: 'controller ip')
         string(name: 'worker_ip_list', defaultValue: '', description: 'worker ips, join with \',\' ')
     }

@@ -16,7 +16,7 @@
     "url": "http://<Jenkins server IP address>:8080"
   },
   "status": {
-    "url": "https://<Frontend server IP address>:8899/local/api/job/"
+    "url": "https://<Frontend server IP address>:8899"
   },
   "jfrog": {
     "url": "http://<Jfrog server IP address>:8082/artifactory"

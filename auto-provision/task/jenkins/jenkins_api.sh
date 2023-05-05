@@ -18,9 +18,11 @@ JfrogUrl=$(./getSecret | grep "JfrogUrl::" | awk -F':: ' '{print $2}')
 #BASEURL="https://workload-automation-dev1.jenkins.pact.intel.com"
 BASEURL=$(./getSecret | grep "jenkinsUrl::" | awk -F':: ' '{print $2}')
 #FRONTAPI="http://10.67.121.100:8899/local/api/job/$jobId/"
-FRONTAPI_PART=$(./getSecret | grep "statusUrl::" | awk -F':: ' '{print $2}')
-FRONTAPI="$FRONTAPI_PART$jobId/"
-INSTANCE_API=${FRONTAPI_PART/job/instance}
+#FRONTURL="https://IP:PORT"
+FRONTURL=$(./getSecret | grep "statusUrl::" | awk -F':: ' '{print $2}')
+STATUS_API="${FRONTURL}/local/api/job/$jobId/"
+INSTANCE_API="${FRONTURL}/local/api/instance/"
+TESTRESULT_API="${FRONTURL}/local/api/test_result/"
 function sendEmail() {
     # s1 message content $2 enclosure
     cd ../scripts
@@ -32,6 +34,9 @@ function sendEmail() {
     cd -
 }
 
+function clearLocalMediaFile() {
+    rm ../../../portal/backend/workspace/local/media/*
+}
 
 
 CleanFailFlagBeforeStart
@@ -56,11 +61,13 @@ Step first "CREATE A NEW JENKINS JOB"
 queuedId=$(curl -i \
     $BASEURL/job/full_benchmark/buildWithParameters/ \
     --user $USER \
+    --data front_job_id=$jobId \
     --data platforms=$platforms \
     --data workload_list=$workloadName \
     --data controller_ip=$CONTROLLER_IP \
     --data repo=$jsfRepo \
     --data instance_api=$INSTANCE_API \
+    --data django_execution_result_url=$TESTRESULT_API \
     --data artifactory_url=$JfrogUrl \
     --data sf_commit=$commit \
     --data registry=$registry \
@@ -76,10 +83,10 @@ Step second "GET THE REALLY JOB ID TO USE"
 result=(curl --user $USER $BASEURL/queue/item/$queuedId/api/json)
 echo "$result" > "data.json"
 while :; do
-    jobId=$(curl --user $USER $BASEURL/queue/item/$queuedId/api/json | jq '.executable.number')
+    jenkinsJobId=$(curl --user $USER $BASEURL/queue/item/$queuedId/api/json | jq '.executable.number')
     # TODO set timeout
-    if [ $(echo $jobId) != "null" ]; then
-        Show "$jobId"
+    if [ $(echo $jenkinsJobId) != "null" ]; then
+        Show "$jenkinsJobId"
         break
     fi
     Show "wait for the task to start......"
@@ -88,7 +95,7 @@ done
 
 # --auth USER[:PASS], -a USER[:PASS]
 # --auth-type {basic, digest} Defaults to "basic"
-HTTP_PUT_CMD="http put $FRONTAPI --auth $portalUserName:$portalPassword --verify=no"
+HTTP_PUT_CMD="http put $STATUS_API --auth $portalUserName:$portalPassword --verify=no"
 
 #Get Jenkins job status
 Step third "GET JENKINS JOB STATUS"
@@ -97,7 +104,7 @@ echo '{"progress": 50}' | $HTTP_PUT_CMD
 echo '{"status": "JENKINS_RUNNING"}' | $HTTP_PUT_CMD
 while :; do
     jenkinsStatus=$(curl --user $USER \
-        $BASEURL/job/full_benchmark/$jobId/api/json | jq '.result')
+        $BASEURL/job/full_benchmark/$jenkinsJobId/api/json | jq '.result')
     if [ $(echo $jenkinsStatus) == "null" ]; then
 	Show "jenkinsStatus --> running"
 	sleep 30
@@ -125,12 +132,12 @@ while :; do
 done
 
 resultUrl_raw=$(curl --user $USER \
-	$BASEURL/job/full_benchmark/$jobId/api/json | jq '.url')
+	$BASEURL/job/full_benchmark/$jenkinsJobId/api/json | jq '.url')
 resultUrl=${resultUrl_raw//\"/}
 Show $resultUrl
 
 LOGBASEURL="$BASEURL/job"
-logUrl=$LOGBASEURL/full_benchmark/$jobId/consoleText
+logUrl=$LOGBASEURL/full_benchmark/$jenkinsJobId/consoleText
 logJobId=$(curl $logUrl --user $USER -k | grep 'benchmark #' |awk -F ' ' '{print $4}')
 logJobId_trim=${logJobId/\#/}
 logResult=$LOGBASEURL/benchmark/$logJobId_trim/consoleText
@@ -146,4 +153,5 @@ echo $execution_url_trim
 echo {\"result_link\": \"$execution_url_trim\"} | $HTTP_PUT_CMD
 
 sendEmail "<html><body><p>Jenkins url: <br/>$resultUrl<br/>Artifactory url: <br/>$logContent<br/></p></body></html>"
+clearLocalMediaFile
 AfterShell

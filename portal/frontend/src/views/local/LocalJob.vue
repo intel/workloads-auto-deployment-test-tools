@@ -61,21 +61,31 @@
                 :key="ip"
             ></Tag>
           </template>
+        <!--
         <template #body="slotProps" v-else-if="col.field === 'result_link'">
-            <a
-              v-if="!slotProps.data.result_link"
-              :href="'https://af01p-igk.devtools.intel.com/artifactory/platform_hero-igk-local/auto_provision/main_09-09-2022_264_auto-provision_d79aac4b/execution/ICX_Kafka_211.json'"
-              target="_blank"
-            >
-            </a>
-            <a
-              v-else
-              :href="slotProps.data.result_link"
-              target="_blank"
-            >
-              kpi_link
-            </a>
-          </template>
+          <a
+            v-if="!slotProps.data.result_link"
+            :href="'https://af01p-igk.devtools.intel.com/artifactory/platform_hero-igk-local/auto_provision/main_09-09-2022_264_auto-provision_d79aac4b/execution/ICX_Kafka_211.json'"
+            target="_blank"
+          >
+          </a>
+          <a
+            v-else
+            :href="slotProps.data.result_link"
+            target="_blank"
+          >
+            kpi_link
+          </a>
+        </template>
+        -->
+        <template #body="slotProps" v-else-if="col.field === 'local_job_test_result'">
+          <Button
+            :label="'Result'"
+            icon="pi pi-bookmark"
+            class="p-button-raised p-button-rounded p-button-sm p-button-help"
+            @click="showLocalJobTestResult(slotProps.data.id)"
+          />
+        </template>
         <template #body="slotProps" v-else-if="col.field === 'progress'">
             {{ slotProps.data.progress }}% complete
             <ProgressBar :value="slotProps.data.progress" />
@@ -156,6 +166,18 @@
       :LogPath="log"
     />
   </Dialog>
+  <Dialog
+    :header="'instance ' + jobid"
+    :visible.sync="displayLocalJobTestResult"
+    :style="{width: '90%'}"
+    :maximizable="false"
+    :modal="true"
+    v-if="jobid !== null"
+  >
+    <LocalJobTestResultComponent
+      :JobId="jobid"
+    />
+  </Dialog>
 </div>
 </template>
 
@@ -170,6 +192,7 @@ import ConfirmDialog from 'primevue/confirmdialog'
 import Dialog from 'primevue/dialog'
 import LocalLogComponent from '@/views/local/TestLog.vue'
 import LocalExternalLogComponent from '@/views/local/ExternalLog.vue'
+import LocalJobTestResultComponent from '@/views/local/TestResult.vue'
 
 // import Checkbox from 'primevue/checkbox'
 // import { CSRF_TOKEN } from '../../common/csrf_token'
@@ -188,6 +211,7 @@ export default {
     Dialog,
     LocalLogComponent,
     LocalExternalLogComponent,
+    LocalJobTestResultComponent,
     InputText
     // Checkbox
   },
@@ -199,6 +223,7 @@ export default {
       jobs: [],
       selectedIds: [],
       displayExternalLog: false,
+      displayLocalJobTestResult: false,
       showJobs: false,
       jobid: null,
       log: null,
@@ -232,6 +257,10 @@ export default {
       this.displayExternalLog = true
       this.log = id.toString()
     },
+    showLocalJobTestResult (id) {
+      this.displayLocalJobTestResult = true
+      this.jobid = id.toString()
+    },
     refresh () {
       this.getJobs()
     }
@@ -250,7 +279,7 @@ export default {
       { field: 'progress', header: 'Progress', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
       { field: 'status', header: 'Status', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
       { field: 'filter_case', header: 'filter_case', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
-      { field: 'result_link', header: 'KPI', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
+      { field: 'local_job_test_result', header: 'KPI', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
       { field: 'log', header: 'Log', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
       { field: 'user', header: 'Submitter', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
       { field: 'created', header: 'Created', style: "{'flex-grow':'1', 'flex-basis':'100px'}" }

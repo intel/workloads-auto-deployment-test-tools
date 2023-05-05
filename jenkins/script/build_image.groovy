@@ -40,7 +40,7 @@ pipeline {
 			steps {
 				script {
 			    	sh (
-    					script: "cd validation &&  rm -rf build && mkdir build && cd build && echo accept | cmake -DPLATFORM=${platform} -DREGISTRY=${registry} -DBACKEND=terraform -DRELEASE=${commitId} -DACCEPT_LICENSE=ALL ../",
+    					script: "cd validation &&  rm -rf build && mkdir build && cd build && echo accept | cmake -DPLATFORM=${platform} -DBENCHMARK='' -DREGISTRY=${registry} -DBACKEND=terraform -DRELEASE=${commitId} -DACCEPT_LICENSE=ALL ../",
     					returnStdout: true
     					)
     				sh (script: "cd validation/build && make build_terraform", returnStdout: true)

@@ -1,7 +1,7 @@
 import json
 import os
 import re
-import requests
+import requests, datetime
 import yaml
 from utils import sha256, execute_cmd, get_platforms
 import subprocess # nosec
@@ -40,7 +40,7 @@ class Execution(object):
         :param platform:
         :param workload:
         :param config:
-        :return:
+        :return: benchmark_execution_info dict
         '''
         benchmark_execution_info = {}
         benchmark_execution_info['execution'] = {}
@@ -347,10 +347,88 @@ class Execution(object):
                         bom_name = line.split(' ')[0]
                         bom_value = line.split(' ')[1]
                         benchmark_execution_info['execution'][test_platform][workload]['bom'][bom_name] = bom_value
-
         print(benchmark_execution_info)
+        return benchmark_execution_info
+
+    def store_benchmark_execution_info(self, benchmark_execution_info, front_job_id, platform, workload, store_url):
+        '''
+        store test result for each benchmark run
+        :param benchmark_execution_info: dict
+        :param front_job_id: str
+        :param platform
+        :param workload
+        :param store_url
+        :return:
+        '''
+        if ({'execution': {}} == benchmark_execution_info):
+            print("Execution result is null...")
+            return 0
 
         json_str = json.dumps(benchmark_execution_info, indent=4)
         execution_json_file = os.path.join(os.getenv("WORKSPACE",""), "%s_%s.json" % (platform, workload))
         with open('%s' % execution_json_file, 'w') as json_file:
             json_file.write(json_str)
+
+        dict_info_execution = benchmark_execution_info
+        result_to_store_list = []
+        result_to_store = {}
+        dict_info_execution_key = list(dict_info_execution.keys())[0]
+        result_to_store['job_id'] = front_job_id
+        dict_info_platform, result_to_store['platform'] = self.get_inner_key_from_dict(dict_info_execution, 'execution')
+        dict_info_workload, result_to_store['workload'] = self.get_inner_key_from_dict(dict_info_platform, result_to_store['platform'])
+        dict_info_kpis_and_others, kpis_and_others = self.get_inner_key_from_dict(dict_info_workload, result_to_store['workload'])
+        dict_info_kpis = dict_info_kpis_and_others['kpi']
+
+        portal_username = subprocess.run(['vault', 'kv', 'get', '-mount=kv', '-field=portalUserName', 'wsf-secret-password'], capture_output=True, text=True).stdout
+        portal_password = subprocess.run(['vault', 'kv', 'get', '-mount=kv', '-field=portalPassword', 'wsf-secret-password'], capture_output=True, text=True).stdout
+        if ({} == dict_info_kpis):
+            for case in dict_info_kpis_and_others['all_test_case']:
+                result_to_store_temp = result_to_store
+                result_to_store_temp['test_case'] = case[5:]
+                result_to_store_temp['kpi_key'] = '-'
+                result_to_store_temp['kpi_value'] = '-'
+                result_to_store_temp['test_result'] = 'FAILED'
+                timestamp = datetime.datetime.now().strftime("%Y/%m/%d, %H:%M:%S") 
+                # promotion needed with timestamp
+                result_to_store_temp['test_date'] = timestamp
+                result_to_store_temp['created'] = timestamp
+                result_to_store_temp['modified'] = timestamp
+                try:
+                    response = requests.post(store_url, data=json.dumps(result_to_store_temp), verify="/home/cert.pem", headers={'Content-Type': 'application/json'}, auth=(portal_username, portal_password))
+                    print(response.json())
+                    print("Test result uploaded")
+                except Exception as e:
+                    print("An exception occurs...")
+                    print(e)
+        else:
+            for kpi in dict_info_kpis:
+                result_to_store_temp = result_to_store
+                result_to_store_temp['test_case'] = kpi
+                if ([] == list(dict_info_kpis[kpi]['metrics'].keys())):
+                    result_to_store_temp['kpi_key'] = '-'
+                    result_to_store_temp['kpi_value'] = '-'
+                    result_to_store_temp['test_result'] = 'FAILED'
+                else:
+                    result_to_store_temp['kpi_key'] = list(dict_info_kpis[kpi]['metrics'].keys())[0]
+                    result_to_store_temp['kpi_value'] = dict_info_kpis[kpi]['metrics'][result_to_store_temp['kpi_key']]
+                    result_to_store_temp['test_result'] = 'PASS'
+                result_to_store_temp['test_time'] = dict_info_kpis[kpi]['test_time']
+                # result_to_store_temp['cumulus_uri'] = dict_info_kpis[kpi]['cumulus_url']
+                timestamp = datetime.datetime.now().strftime("%Y/%m/%d, %H:%M:%S") 
+                # promotion needed with timestamp
+                result_to_store_temp['test_date'] = timestamp
+                result_to_store_temp['created'] = timestamp
+                result_to_store_temp['modified'] = timestamp
+                try:
+                    response = requests.post(store_url, data=json.dumps(result_to_store_temp), verify="/home/cert.pem", headers={'Content-Type': 'application/json'}, auth=(portal_username, portal_password))
+                    print(response.json())
+                except Exception as e:
+                    print("An exception occurs...")
+                    print(e)
+
+    def get_inner_key_from_dict(self, outterDict, outterDictKey):
+        innerDict = outterDict[outterDictKey]
+        innerDictKeyList = list(innerDict.keys())
+        if (len(innerDictKeyList) > 1):
+            return innerDict, innerDictKeyList
+        return innerDict, innerDictKeyList[0]

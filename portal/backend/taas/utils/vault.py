@@ -7,11 +7,11 @@ from local.models import LocalSetting
 
 # try catch need to be added
 def getUser(provision_server_url):
-    result = subprocess.run("vault kv get -format=json kv/wsf-secret-password | jq", shell=True, stdout=subprocess.PIPE)
-    result = json.loads(result.stdout)
+    provision_username = subprocess.check_output(['vault', 'kv', 'get', '-mount=kv', '-field=provisionUserName', 'wsf-secret-password']).decode('utf-8')
+    provision_password = subprocess.check_output(['vault', 'kv', 'get', '-mount=kv', '-field=provisionPassword', 'wsf-secret-password']).decode('utf-8')
     payload = {
-        'username': result['data']['provisionUserName'],
-        'password': result['data']['provisionPassword']
+        'username': provision_username,
+        'password': provision_password
     }
     return payload
 

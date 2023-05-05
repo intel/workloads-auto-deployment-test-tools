@@ -8,10 +8,12 @@ router = DefaultRouter()
 
 router.register(r'instance', LocalInstanceViewSet)
 router.register(r'job', JobViewSet)
+router.register(r'test_result', LocalJobTestResultViewSet)
 router.register(r'workload', WorkloadViewSet)
 router.register(r'component_param', ComponentParamViewSet)
 router.register(r'workload_system_config', WorkloadSystemConfigViewSet)
 router.register(r'instance_job_queue',LocalInstanceJobQueueViewSet)
+router.register(r'local_setting', LocalSettingViewSet)
 router.register(r'provison_parameter', ProvisonParameterValueSet)
 
 urlpatterns = [
@@ -22,6 +24,9 @@ urlpatterns = [
     path(
         "provision/",
         ProvisionAPIView.as_view()),
+    path(
+        "upload_video_check/",
+        UploadVideoCheck.as_view()),
     path(
         "schedule_check/",
         ScheduleCheck.as_view()),
