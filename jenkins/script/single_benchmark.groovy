@@ -102,7 +102,7 @@ pipeline {
         stage('Run workload benchmark') {
             steps {
                 script {
-                    sh "python3 ${workspace}/script/jenkins/script/benchmark.py $build_session benchmark || echo \$? > status"
+                    sh "${workspace}/script/jenkins/script/benchmark $build_session benchmark || echo \$? > status"
                 }
             }
         }
@@ -111,7 +111,7 @@ pipeline {
         always {
             script {
                 println "Create and publish artifacts."
-                sh "python3 ${workspace}/script/jenkins/script/benchmark.py $build_session artifacts"
+                sh "${workspace}/script/jenkins/script/benchmark $build_session artifacts"
                 def art_url="${artifactory_url}"
                 out = sh (script:"ls ${workspace}/validation/build/workload/${workload}/Testing/Temporary", returnStatus:true)
                 if (out == 0) {

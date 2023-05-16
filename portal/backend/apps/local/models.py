@@ -8,6 +8,15 @@ class LocalInstance(models.Model):
         ('FREE', 'FREE'),
         ('IN_USE','IN_USE'),
     ]
+    INSTANCE_CHOICES = [ 
+        ('ICX', 'ICX'),
+        ('SPR','SPR'),
+    ]
+    ROLE_CHOICES = [
+        ('controller,worker', 'controller,worker'),
+        ('controller', 'controller'),
+        ('worker', 'worker'),
+    ]
     hostname = models.CharField(max_length=50, null=True, blank=True)
     username = models.CharField(max_length=30, null=True, blank=True)
     password = models.CharField(max_length=30, null=True, blank=True)
@@ -15,7 +24,7 @@ class LocalInstance(models.Model):
     ssh_port = models.PositiveIntegerField(null=True, blank=True, default=22)
     internal_ip = models.CharField(max_length=30, null=True, blank=True)
     region = models.CharField(max_length=30, null=True, blank=True)
-    instance_type = models.CharField(max_length=30, null=True, blank=True)
+    instance_type = models.CharField(max_length=30, choices=INSTANCE_CHOICES,default='SPR', null=True, blank=True)
     cpu_arch = models.CharField(max_length=30, null=True, blank=True)
     cpu_core = models.CharField(max_length=30, null=True, blank=True)
     cpu_model = models.CharField(max_length=255, null=True, blank=True)
@@ -23,7 +32,7 @@ class LocalInstance(models.Model):
     memory_size = models.CharField(max_length=30, null=True, blank=True)
     disk = ArrayField(models.CharField(max_length=30), default=list, blank=True, null=True)
     os = models.CharField(max_length=50, null=True, blank=True)
-    k8s_role = models.CharField(max_length=50, null=True, blank=True)
+    k8s_role = models.CharField(max_length=30, choices=ROLE_CHOICES,default='controller,worker', null=True, blank=True)
     k8s_controller = models.CharField(max_length=50, null=True, blank=True)
     platform = models.CharField(max_length=30, null=True, blank=True)
     user = models.CharField(max_length=30, null=True, blank=True)

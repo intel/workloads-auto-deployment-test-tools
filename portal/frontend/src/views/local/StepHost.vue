@@ -42,11 +42,25 @@
             </div>
             <div>
               <h5>Worker Check</h5>
+              <div v-if="this.selectedController.length == 0 || 
+                         this.selectedWorker.length == 0 || 
+                         this.selectedDatetime === null">
+                  <font color="#FF0000">Completing form</font>
+              </div>
+              <div v-if="this.checkGreen == false &&
+                         this.checkRed == false && 
+                         this.selectedController.length !== 0 &&
+                         this.selectedWorker.length !== 0 && 
+                         this.selectedDatetime !== null">
+                  <font color="#FF0000">Checking hosts</font>
+              </div>
               <div v-show="this.formData.checkGreen">
                 <el-button type="success" icon="el-icon-check" circle></el-button>
               </div>
               <div v-show="this.formData.checkRed">
+                <el-tooltip :content="JSON.stringify(this.formData.hostCheckData)">
                 <el-button type="danger" icon="el-icon-close" circle></el-button>
+                </el-tooltip>
               </div>
             </div>
           </div>
@@ -111,7 +125,8 @@ export default {
       endTime: new Date(Date.UTC((new Date()).getFullYear(), (new Date()).getMonth(), (new Date()).getDate(), (new Date()).getHours(), (new Date()).getMinutes() + 5, (new Date()).getSeconds())).toISOString().slice(11, 19),
       tableData: null,
       checkGreen: false,
-      checkRed: false
+      checkRed: false,
+      hostCheckData: null
     }
   },
   props: {
@@ -155,16 +170,19 @@ export default {
         .then(response => {
           this.formData.checkGreen = true
           this.formData.checkRed = false
+          // this.formData.hostCheckData = response.data
         })
         .catch(e => {
           this.formData.checkGreen = false
           this.formData.checkRed = true
+          this.formData.hostCheckData = e.response.data
         })
     }
   },
   watch: {
     selectedDatetime: function () {
       this.formData.selectedDatetime = []
+
       if (this.selectedDatetime === null) {
         this.checkGreen = false
         this.formData.checkGreen = false

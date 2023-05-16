@@ -12,6 +12,7 @@ var stepFormData = {
   tableData: null,
   checkGreen: false,
   checkRed: false,
+  hostCheckData: "",
   // StepKubernetes
   deploy_kubernetes: false,
   KubernetesInstallMethod: [],

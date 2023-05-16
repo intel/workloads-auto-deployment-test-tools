@@ -1,48 +1,49 @@
 <template>
-<div>
-  <TabView>
-    <TabPanel header="Provision">
-      <template>
-        <div class="p-fluid p-formgrid p-grid ml-2 mr-2">
-          <div class="p-field p-col-12 p-md-12">
-            <el-card class="p-card-background">
-              <el-steps :active="active" finish-status="success">
-                <el-step title="Workload"></el-step>
-                <el-step title="DeployHost Args"></el-step>
-                <el-step title="Kubernetes Args"></el-step>
-                <el-step title="VM Args"></el-step>
-                <el-step title="Workload Args"></el-step>
-                <el-step title="Software Args"></el-step>
-                <el-step title="System Args"></el-step>
-                <el-step title="Email"></el-step>
-              </el-steps>
-            </el-card>
-          </div>
-          <div class="p-field p-col-12 p-md-12">
-            <el-card class="p-card-background">
-              <step-workload :formData="stepFormData" v-if="active===0"></step-workload>
-              <step-host :formData="stepFormData" v-if="active===1"></step-host>
-              <step-kubernetes :formData="stepFormData" v-if="active===2"></step-kubernetes>
-              <step-VMArgs :formData="stepFormData" v-if="active===3"></step-VMArgs>
-              <step-workloadArgs :formData="stepFormData" v-if="active===4"></step-workloadArgs>
-              <step-softwareArgs :formData="stepFormData" v-if="active===5"></step-softwareArgs>
-              <step-systemArgs :formData="stepFormData" v-if="active===6"></step-systemArgs>
-              <step-Email :formData="stepFormData" v-if="active===7"></step-Email>
-              <div align="right">
-              <div v-if="this.active === 7 ? true :false">Complete All Forms</div>
-              <el-button style="margin-top: 12px;" @click="prev">Previous</el-button>
-              <el-button style="margin-top: 12px;" @click="next">Next</el-button>
-              <el-button v-if="this.active === 7 ? true :false" style="margin-top: 12px;" @click="submitProvision">Submit</el-button>
-              </div>
-            </el-card>
-          </div>
-        </div>
-      </template>
-    </TabPanel>
-  </TabView>
   <div>
-    <Toast position="top-right" />
-  </div>
+    <TabView>
+      <TabPanel header="Provision">
+        <template>
+          <div class="p-fluid p-formgrid p-grid ml-2 mr-2">
+            <div class="p-field p-col-12 p-md-12">
+              <el-card class="p-card-background">
+                <el-steps :active="active" finish-status="success">
+                  <el-step title="Workload"></el-step>
+                  <el-step title="DeployHost Args"></el-step>
+                  <el-step title="Kubernetes Args"></el-step>
+                  <el-step title="VM Args"></el-step>
+                  <el-step title="Workload Args"></el-step>
+                  <el-step title="Software Args"></el-step>
+                  <el-step title="System Args"></el-step>
+                  <el-step title="Email"></el-step>
+                </el-steps>
+              </el-card>
+            </div>
+            <div class="p-field p-col-12 p-md-12">
+              <el-card class="p-card-background">
+                <step-workload :formData="stepFormData" v-if="active === 0"></step-workload>
+                <step-host :formData="stepFormData" v-if="active === 1"></step-host>
+                <step-kubernetes :formData="stepFormData" v-if="active === 2"></step-kubernetes>
+                <step-VMArgs :formData="stepFormData" v-if="active === 3"></step-VMArgs>
+                <step-workloadArgs :formData="stepFormData" v-if="active === 4"></step-workloadArgs>
+                <step-softwareArgs :formData="stepFormData" v-if="active === 5"></step-softwareArgs>
+                <step-systemArgs :formData="stepFormData" v-if="active === 6"></step-systemArgs>
+                <step-Email :formData="stepFormData" v-if="active === 7"></step-Email>
+                <div align="right">
+                  <div v-if="this.active === 7 ? true : false">Complete All Forms</div>
+                  <el-button style="margin-top: 12px;" @click="prev">Previous</el-button>
+                  <el-button style="margin-top: 12px;" @click="next">Next</el-button>
+                  <el-button v-if="this.active === 7 ? true : false" style="margin-top: 12px;"
+                    @click="submitProvision">Submit</el-button>
+                </div>
+              </el-card>
+            </div>
+          </div>
+        </template>
+      </TabPanel>
+    </TabView>
+    <div>
+      <Toast position="top-right" />
+    </div>
   </div>
 </template>
 
@@ -80,7 +81,7 @@ export default {
     TabPanel,
     Toast
   },
-  data () {
+  data() {
     return {
       active: 0,
       stepFormData: JSON.parse(JSON.stringify(stepFormData)),
@@ -88,7 +89,7 @@ export default {
     }
   },
   methods: {
-    next () {
+    next() {
       if (this.active === 0) {
         if (!this.checkStepWorkload()) return
       }
@@ -112,10 +113,10 @@ export default {
       }
       if (this.active++ > 6) this.active = 7
     },
-    prev () {
+    prev() {
       if (this.active-- < 1) this.active = 0
     },
-    checkStepWorkload () {
+    checkStepWorkload() {
       if (this.stepFormData.selectedWorkloadName.length !== 0 && this.stepFormData.selectedVersion.length !== 0) {
         return true
       } else {
@@ -123,26 +124,29 @@ export default {
         return false
       }
     },
-    checkStepHost () {
+    checkStepHost() {
       if (this.stepFormData.checkGreen) {
         return true
       } else {
+        for (var machine of this.stepFormData.hostCheckData.result) {
+          this.$toast.add({ severity: 'error', summary: 'Host Error', detail: JSON.stringify(machine), life: 10000 })
+        }
         this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select HOSTS and available time range', life: 2000 })
         return false
       }
     },
-    checkStepKubernetes () {
+    checkStepKubernetes() {
       if (this.stepFormData.deploy_kubernetes) {
         if (this.stepFormData.selectedKubernetesInstallMethod !== null && this.stepFormData.selectedKubernetesInstallMethod.length !== 0 &&
-        this.stepFormData.selectedKubernetesVersion !== null && this.stepFormData.selectedKubernetesVersion.length !== 0 &&
-        this.stepFormData.selectedKubernetesNetworkPlugin !== null && this.stepFormData.selectedKubernetesNetworkPlugin.length !== 0 &&
-        this.stepFormData.selectedContainerManager !== null && this.stepFormData.selectedContainerManager.length !== 0 &&
-        this.stepFormData.selectedDashboardEnable !== null && this.stepFormData.selectedDashboardEnable.length !== 0 &&
-        this.stepFormData.selectedHEMLEnable !== null && this.stepFormData.selectedHEMLEnable.length !== 0 &&
-        this.stepFormData.selectedRegistryEnable !== null && this.stepFormData.selectedRegistryEnable.length !== 0 &&
-        this.stepFormData.selectedIngressNginxEnabled !== null && this.stepFormData.selectedIngressNginxEnabled.length !== 0 &&
-        this.stepFormData.selectedIngressNginxHostNetwork !== null && this.stepFormData.selectedIngressNginxHostNetwork.length !== 0 &&
-        this.stepFormData.selectedKrewEnabled !== null && this.stepFormData.selectedKrewEnabled.length !== 0) {
+          this.stepFormData.selectedKubernetesVersion !== null && this.stepFormData.selectedKubernetesVersion.length !== 0 &&
+          this.stepFormData.selectedKubernetesNetworkPlugin !== null && this.stepFormData.selectedKubernetesNetworkPlugin.length !== 0 &&
+          this.stepFormData.selectedContainerManager !== null && this.stepFormData.selectedContainerManager.length !== 0 &&
+          this.stepFormData.selectedDashboardEnable !== null && this.stepFormData.selectedDashboardEnable.length !== 0 &&
+          this.stepFormData.selectedHEMLEnable !== null && this.stepFormData.selectedHEMLEnable.length !== 0 &&
+          this.stepFormData.selectedRegistryEnable !== null && this.stepFormData.selectedRegistryEnable.length !== 0 &&
+          this.stepFormData.selectedIngressNginxEnabled !== null && this.stepFormData.selectedIngressNginxEnabled.length !== 0 &&
+          this.stepFormData.selectedIngressNginxHostNetwork !== null && this.stepFormData.selectedIngressNginxHostNetwork.length !== 0 &&
+          this.stepFormData.selectedKrewEnabled !== null && this.stepFormData.selectedKrewEnabled.length !== 0) {
           return true
         } else {
           this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select a value for Kubernetes items', life: 2000 })
@@ -152,15 +156,15 @@ export default {
         return true
       }
     },
-    checkStepVMArgs () {
+    checkStepVMArgs() {
       if (this.stepFormData.vm_deploy_args && this.stepFormData.deploy_kubernetes) {
         if (this.stepFormData.selectedVMDocker !== null && this.stepFormData.selectedVMDocker.length !== 0 &&
-        this.stepFormData.selectedOSNumber !== null && this.stepFormData.selectedOSNumber.length !== 0 &&
-        this.stepFormData.selectedOSType !== null && this.stepFormData.selectedOSType.length !== 0 &&
-        this.stepFormData.selectedVMName !== null && this.stepFormData.selectedVMName.length !== 0 &&
-        this.stepFormData.selectedMemory !== null && this.stepFormData.selectedMemory.length !== 0 &&
-        this.stepFormData.selectedCPUNumber !== null && this.stepFormData.selectedCPUNumber.length !== 0 &&
-        this.stepFormData.selectedDisk !== null && this.stepFormData.selectedDisk.length !== 0) {
+          this.stepFormData.selectedOSNumber !== null && this.stepFormData.selectedOSNumber.length !== 0 &&
+          this.stepFormData.selectedOSType !== null && this.stepFormData.selectedOSType.length !== 0 &&
+          this.stepFormData.selectedVMName !== null && this.stepFormData.selectedVMName.length !== 0 &&
+          this.stepFormData.selectedMemory !== null && this.stepFormData.selectedMemory.length !== 0 &&
+          this.stepFormData.selectedCPUNumber !== null && this.stepFormData.selectedCPUNumber.length !== 0 &&
+          this.stepFormData.selectedDisk !== null && this.stepFormData.selectedDisk.length !== 0) {
           return true
         } else {
           this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select a value for VM items', life: 2000 })
@@ -170,13 +174,13 @@ export default {
         return true
       }
     },
-    checkStepWorkloadArgs () {
+    checkStepWorkloadArgs() {
       if (this.stepFormData.deploy_workload_args) {
         if (this.stepFormData.jenkins_args) {
           if (this.stepFormData.selectedWorkloadName !== null && this.stepFormData.selectedWorkloadName.length !== 0 &&
-          this.stepFormData.selectedJSFRepo !== null && this.stepFormData.selectedJSFRepo.length !== 0 &&
-          this.stepFormData.selectedCommit !== null && this.stepFormData.selectedCommit.length !== 0 &&
-          this.stepFormData.selectedRegistry !== null && this.stepFormData.selectedRegistry.length !== 0) {
+            this.stepFormData.selectedJSFRepo !== null && this.stepFormData.selectedJSFRepo.length !== 0 &&
+            this.stepFormData.selectedCommit !== null && this.stepFormData.selectedCommit.length !== 0 &&
+            this.stepFormData.selectedRegistry !== null && this.stepFormData.selectedRegistry.length !== 0) {
             return true
           } else {
             this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select a value for all Jenkins related items', life: 2000 })
@@ -185,9 +189,9 @@ export default {
         }
         if (this.stepFormData.workload_package_args) {
           if (this.stepFormData.selectedDeployMode !== null && this.stepFormData.selectedDeployMode.length !== 0 &&
-          this.stepFormData.selectedTaskPath !== null && this.stepFormData.selectedTaskPath.length !== 0 &&
-          this.stepFormData.selectedPSFRepo !== null && this.stepFormData.selectedPSFRepo.length !== 0 &&
-          this.stepFormData.selectedWorkloadArgs !== null && this.stepFormData.selectedWorkloadArgs.length !== 0) {
+            this.stepFormData.selectedTaskPath !== null && this.stepFormData.selectedTaskPath.length !== 0 &&
+            this.stepFormData.selectedPSFRepo !== null && this.stepFormData.selectedPSFRepo.length !== 0 &&
+            this.stepFormData.selectedWorkloadArgs !== null && this.stepFormData.selectedWorkloadArgs.length !== 0) {
             return true
           } else {
             this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select a value for all Workload Package related items', life: 2000 })
@@ -200,7 +204,7 @@ export default {
         return true
       }
     },
-    checkStepSoftwareArgs () {
+    checkStepSoftwareArgs() {
       if (this.stepFormData.software_package_args) {
         if (this.stepFormData.DPDK) {
           if (this.stepFormData.selectedDPDKArgs === null || this.stepFormData.selectedDPDKArgs.length === 0) {
@@ -213,7 +217,7 @@ export default {
         return true
       }
     },
-    checkStepSystemArgs () {
+    checkStepSystemArgs() {
       if (this.stepFormData.system_deploy_args) {
         if (this.stepFormData.os_update) {
           if (this.stepFormData.selectedOS === null || this.stepFormData.selectedOS.length === 0) {
@@ -244,7 +248,7 @@ export default {
         return true
       }
     },
-    getWorkers () {
+    getWorkers() {
       const endpoint = `/local/api/instance/?controller=${this.selectedController[0].ip}`
       axios
         .get(endpoint)
@@ -258,7 +262,7 @@ export default {
           this.errors.push(e)
         })
     },
-    submitProvision () {
+    submitProvision() {
       var configsJson = {}
       var machines = []
       // DeployHost
@@ -418,7 +422,7 @@ export default {
           })
       }
     },
-    getworkloads () {
+    getworkloads() {
       const endpoint = '/local/api/workload/'
       axios
         .get(endpoint)
@@ -431,7 +435,7 @@ export default {
           this.errors.push(e)
         })
     },
-    getMachines () {
+    getMachines() {
       const endpoint = '/local/api/instance/'
       axios
         .get(endpoint)
@@ -456,7 +460,7 @@ export default {
           this.errors.push(e)
         })
     },
-    getAllConfigs () {
+    getAllConfigs() {
       const endpoint = '/local/api/provison_parameter/'
       axios
         .get(endpoint)
@@ -505,7 +509,7 @@ export default {
         })
     }
   },
-  created () {
+  created() {
     this.getworkloads()
     this.getMachines()
     this.getAllConfigs()
