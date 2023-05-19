@@ -116,8 +116,8 @@ class ProvisionAPIView(generics.CreateAPIView):
     serializer_class = ProvisionSerializer 
     def post(self, request, *args, **kwargs):
         print('enter ProvisionAPIView.post() ------------------>')
-        self.request.headers = vault.setHeaders()
         try:
+            self.request.headers = vault.setHeaders()
             provision_server_url = LocalSetting.objects.get(name='provision_server_url').value
             provision_server_url = f"{provision_server_url}/conf/createconf"
             print(self.request.data)

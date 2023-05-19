@@ -9,7 +9,6 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./backend/data/taas_db_init.sql:/docker-entrypoint-initdb.d/init.sql
       - postgresql-data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: 'postgres'

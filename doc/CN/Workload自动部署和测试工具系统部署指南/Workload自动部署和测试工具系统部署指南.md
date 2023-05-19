@@ -28,11 +28,13 @@ git clone https://github.com/intel/workloads-auto-deployment-test-tools.git WSF-
 cd WSF-VaaS/auto-provision/deploy
 ```
 
-#### 3.1.2 运行init.sh 脚本，进行自动化项目运行环境初始化
+#### 3.1.2 运行init.sh 脚本，进行自动化项目运行环境初始化, 需要手动输入服务器通信IP来生成证书
 
 ```shell
 ./init.sh
 ```
+
+###### ![](media/image69.png)
 
 #### 3.1.3 修改WSF-VaaS/auto-provision/conf/conf.json
 
@@ -94,7 +96,7 @@ nohup vault server -config=config.hcl &
 vim /etc/profile
 ```
 
-进入文件后在文件最后添加 export VAULT_ADDR= "http://<Vault服务器IP>:8200"
+进入文件后在文件最后添加 export VAULT_ADDR="http://<Vault服务器IP>:8200"
 
 保存后退出，并执行
 
@@ -144,7 +146,7 @@ vault login
 vim /etc/profile
 ```
 
-进入文件后在文件最后添加 export VAULT_TOKEN= "<第六步生成的‘Initial Root Token’>"
+进入文件后在文件最后添加 export VAULT_TOKEN="<第六步生成的‘Initial Root Token’>"
 
 保存后退出，并执行
 
@@ -412,9 +414,13 @@ python3 manage.py createsuperuser
 
 ![](media/image11.png)
 
-### 4.8 继续在容器backend里面执行命令“vault kv get -format=json kv/wsf-secret-password”验证vault配置是否成功，输出应如下图：
+### 4.8 执行“vault kv get -format=json kv/wsf-secret-password”验证vault配置是否成功，并把portal的用户名密码写入vault：
 
 ###### ![](media/image12.png)
+
+```shell
+vault kv put -format=json kv/wsf-secret-password provisionPassword=<vault get 获取到的provisionPassword > provisionUserName=<vault get 获取到的provisionUserName >  portalPassword=<上一步生成的admin密码 > portalUserName=<上一步生成的用户名 >
+```
 
 ### 4.9 用刚才创建好的admin账户登录portal https://<服务器IP>:8899
 
