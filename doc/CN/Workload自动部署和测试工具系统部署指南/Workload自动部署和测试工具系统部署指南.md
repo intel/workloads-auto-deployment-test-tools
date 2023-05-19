@@ -689,7 +689,7 @@ yum install -y cmake make m4 gawk git python3
 pip3 install lxml paramiko pyyaml
 ```
 
-用命令“java -version”确认服务器是否安装java，如果没有，安装任意版本的JDK即可
+用命令“java -version”确认服务器是否安装java，如果没有，安装JDK11或以上版本
 
 然后访问jenkins主页，点击“manage jenkins”->“ Manage Nodes and Clouds”->”new node”
 
