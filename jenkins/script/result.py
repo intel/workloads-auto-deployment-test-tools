@@ -1,3 +1,8 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 import json
 import os
 import re
@@ -197,7 +202,7 @@ class Execution(object):
                 f = open("%s/workload-config.yaml" % root, 'r')
                 result = f.read()
                 case_workload_config = yaml.safe_load(result)
-                case_sha256 = sha256(case_workload_config['tunables'])
+                case_sha256 = sha256(str(case_workload_config['tunables']))
 
                 test_platform = platform + '_' + cluster_type.upper()
                 if cluster_type == 'baremetal' or cluster_type == 'static':

@@ -1,3 +1,9 @@
+/*
+Apache v2 license
+Copyright (C) 2023 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+*/
+
 def build_time = new Date()
 build_time = build_time.format("MM-dd-yyyy", TimeZone.getTimeZone('UTC'))
 def sf_revision

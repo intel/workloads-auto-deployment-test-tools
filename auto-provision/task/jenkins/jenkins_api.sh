@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 # set -x
 # example ./jenkins_api.sh 106-workload
 configFileName="$1".sh
@@ -101,7 +106,7 @@ HTTP_PUT_CMD="http put $STATUS_API --auth $portalUserName:$portalPassword --veri
 Step third "GET JENKINS JOB STATUS"
 Show "jenkinsStatus -->[running]"
 echo '{"progress": 50}' | $HTTP_PUT_CMD
-echo '{"status": "JENKINS_RUNNING"}' | $HTTP_PUT_CMD
+echo '{"status": "RUNNING"}' | $HTTP_PUT_CMD
 while :; do
     jenkinsStatus=$(curl --user $USER \
         $BASEURL/job/full_benchmark/$jenkinsJobId/api/json | jq '.result')

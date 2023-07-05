@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 
 REPOTOKEN="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"
 XMLCLIREPO="github.com/intel-innersource/applications.validation.platform-automation.xmlcli.xmlcli"

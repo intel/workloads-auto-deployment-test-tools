@@ -1,3 +1,8 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 ---
 # Kubernetes configuration dirs and system namespace.
 # Those are where all the additional config stuff goes

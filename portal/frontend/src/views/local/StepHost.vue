@@ -1,3 +1,8 @@
+<!--
+Apache v2 license
+Copyright (C) 2023 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+-->
 <template>
   <div align="center">
   <div class="p-field p-col-9 p-md-9 text-align-left">
@@ -42,11 +47,24 @@
             </div>
             <div>
               <h5>Worker Check</h5>
-              <div v-show="this.formData.checkGreen">
-                <el-button type="success" icon="el-icon-check" circle></el-button>
+              <div v-if="this.formData.checkGreen == false &&
+                         this.formData.checkRed == false && 
+                         this.selectedController.length !== 0 &&
+                         this.selectedWorker.length !== 0 && 
+                         this.selectedDatetime !== null" align="center">
+                <el-button type="warning" circle>Checking</el-button>
               </div>
-              <div v-show="this.formData.checkRed">
-                <el-button type="danger" icon="el-icon-close" circle></el-button>
+              <div v-show="this.formData.checkGreen" align="center">
+                <el-button type="success" icon="el-icon-check" circle>Passed</el-button>
+              </div>
+              <div v-show="this.formData.checkRed" align="center">
+                <!-- <el-tooltip :content="this.formData.hostCheckTip"> -->
+                <el-tooltip>
+                  <div  slot="content" v-for="item in this.formData.hostCheckData.result" v-bind:key="item">
+                    {{item}}
+                  </div>
+                <el-button type="danger" icon="el-icon-close" circle>Failed</el-button>
+                </el-tooltip>
               </div>
             </div>
           </div>
@@ -111,7 +129,8 @@ export default {
       endTime: new Date(Date.UTC((new Date()).getFullYear(), (new Date()).getMonth(), (new Date()).getDate(), (new Date()).getHours(), (new Date()).getMinutes() + 5, (new Date()).getSeconds())).toISOString().slice(11, 19),
       tableData: null,
       checkGreen: false,
-      checkRed: false
+      checkRed: false,
+      hostCheckData: null,
     }
   },
   props: {
@@ -138,6 +157,8 @@ export default {
       return date.getTime() < previousDate
     },
     checkWorkerSchedule (workers, timeRange) {
+      this.formData.checkGreen = false
+      this.formData.checkRed = false
       const endpoint = '/local/api/schedule_check/'
       const config = {
         headers: {
@@ -155,16 +176,20 @@ export default {
         .then(response => {
           this.formData.checkGreen = true
           this.formData.checkRed = false
+          // this.formData.hostCheckData = response.data
         })
         .catch(e => {
           this.formData.checkGreen = false
           this.formData.checkRed = true
+          this.formData.hostCheckData = e.response.data
+          this.formData.hostCheckTip = ""
         })
     }
   },
   watch: {
     selectedDatetime: function () {
       this.formData.selectedDatetime = []
+
       if (this.selectedDatetime === null) {
         this.checkGreen = false
         this.formData.checkGreen = false
@@ -189,16 +214,38 @@ export default {
       String(this.selectedDatetime[1].getHours()) + ':' +
       String(this.selectedDatetime[1].getMinutes()) + ':' +
       String(this.selectedDatetime[1].getSeconds()) + '+' + timezone)
-      if (this.selectedWorker.length !== 0) {
+      if (this.selectedWorker.length !== 0 && this.selectedController.length !== 0 && this.selectedDatetime) {
         var workers = []
         for (var worker of this.selectedWorker) {
           workers.push(worker.ip)
+        }
+        for (var controller of this.selectedController) {
+          workers.push(controller.ip)
         }
         this.checkWorkerSchedule(workers, this.formData.selectedDatetime)
       }
     },
     selectedController: function () {
       this.formData.selectedController = this.selectedController
+      if (this.selectedController.length === 0) {
+        this.checkGreen = false
+        this.formData.checkGreen = false
+        this.checkRed = false
+        this.formData.checkRed = false
+        return
+      } else {
+        var workers = []
+        for (var worker of this.selectedWorker) {
+          workers.push(worker.ip)
+        }
+        for (var controller of this.selectedController) {
+          workers.push(controller.ip)
+        }
+        this.getWorkersQueue(workers.join(','))
+        if (this.selectedDatetime !== null && this.selectedWorker.length !== 0) {
+          this.checkWorkerSchedule(workers, this.formData.selectedDatetime)
+        }
+      }
     },
     selectedWorker: function () {
       this.formData.selectedWorker = this.selectedWorker
@@ -207,8 +254,11 @@ export default {
         for (var worker of this.selectedWorker) {
           workers.push(worker.ip)
         }
+        for (var controller of this.selectedController) {
+          workers.push(controller.ip)
+        }
         this.getWorkersQueue(workers.join(','))
-        if (this.formData.selectedDatetime !== null) {
+        if (this.selectedDatetime !== null && this.selectedController.length !== 0) {
           this.checkWorkerSchedule(workers, this.formData.selectedDatetime)
         }
       } else {

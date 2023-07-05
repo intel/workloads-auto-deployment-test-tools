@@ -1,3 +1,8 @@
+<!--
+Apache v2 license
+Copyright (C) 2023 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+-->
 <template>
   <div align="center">
   <div class="p-field p-col-6 p-md-6 text-align-left">

@@ -1,3 +1,8 @@
+/*
+Apache v2 license
+Copyright (C) 2023 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+*/
 // https://docs.djangoproject.com/en/dev/ref/csrf/#acquiring-the-token-if-csrf-use-sessions-and-csrf-cookie-httponly-are-false
 
 function getCookie (name) {

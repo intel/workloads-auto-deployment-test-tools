@@ -1,3 +1,8 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 ---
 ## Directory where the binaries will be installed
 bin_dir: /usr/local/bin
@@ -55,8 +60,6 @@ loadbalancer_apiserver_healthcheck_port: 8081
 ## Set these proxy values in order to update package manager and docker daemon to use proxies
 # http_proxy: ""
 # https_proxy: ""
-http_proxy: "http://child-prc.intel.com:913"
-https_proxy: "http://child-prc.intel.com:913"
 ## Refer to roles/kubespray-defaults/defaults/main.yml before modifying no_proxy
 # no_proxy: ""
 

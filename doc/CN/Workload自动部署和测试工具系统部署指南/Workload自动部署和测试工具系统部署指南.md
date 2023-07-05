@@ -203,7 +203,7 @@ sudo rm -rf /usr/bin/go
 #### 3.3.2 下载安装包并安装golang
 
 ```shell
-wget --no-check-certificate wget --no-check-certificate <https://dl.google.com/go/go1.18.3.linux-amd64.tar.gz>
+wget --no-check-certificate <https://dl.google.com/go/go1.18.3.linux-amd64.tar.gz>
 sudo tar -C /usr/local -zxvf go1.18.3.linux-amd64.tar.gz
 ```
 

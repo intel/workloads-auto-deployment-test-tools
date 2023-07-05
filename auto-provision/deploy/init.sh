@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 # usage
 # echo {{password}} | sudo -S ./{{script_name}}
 
@@ -58,13 +63,13 @@ function installHttpie () {
         if ! command -v http >/dev/null 2>&1; then
                 echo "start install httpie......"
                 if [ -f /etc/redhat-release ]; then
-                        yum install epel-release
-                        yum install httpie
+                        sudo yum install epel-release
+                        sudo yum install httpie
                 else
-                        curl -SsL https://packages.httpie.io/deb/KEY.gpg | apt-key add -
-                        curl -SsL -o /etc/apt/sources.list.d/httpie.list https://packages.httpie.io/deb/httpie.list
-                        apt update
-                        apt install httpie
+                        curl -SsL https://packages.httpie.io/deb/KEY.gpg | sudo apt-key add -
+                        sudo curl -SsL -o /etc/apt/sources.list.d/httpie.list https://packages.httpie.io/deb/httpie.list
+                        sudo apt update
+                        sudo apt install httpie
                 fi
         else
                 echo "httpie is installed."
@@ -94,8 +99,10 @@ function run() {
 	# https cert
 	cd "../cert"
 	./gencert.sh
-	rm -f ../../portal/backend/cert/*.pem;cp *.pem ../../portal/backend/cert
-	rm -f /home/*.pem;cp *.pem /home
+	rm -f ../../portal/backend/cert/*.pem;
+	cp *.pem ../../portal/backend/cert
+	sudo rm -f /home/*.pem;
+	sudo cp *.pem /home
 	cd -
 
 }

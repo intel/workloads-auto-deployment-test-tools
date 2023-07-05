@@ -1,3 +1,9 @@
+/*
+Apache v2 license
+Copyright (C) 2023 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+*/
+
 def build_time = new Date()
 build_time = build_time.format('MM-dd-yyyy', TimeZone.getTimeZone('UTC'))
 def revision
@@ -102,7 +108,9 @@ pipeline {
         stage('Run workload benchmark') {
             steps {
                 script {
-                    sh "python3 ${workspace}/script/jenkins/script/benchmark.py $build_session benchmark || echo \$? > status"
+                    //sh "${workspace}/script/jenkins/script/benchmark $build_session benchmark || echo \$? > status"
+                    benchmark_status=sh(script:"${workspace}/script/jenkins/script/benchmark $build_session benchmark", returnStatus:true)
+                    sh(script:"echo ${benchmark_status} > status")
                 }
             }
         }
@@ -110,8 +118,14 @@ pipeline {
     post {
         always {
             script {
+                def benchmark_status = readFile(file: 'status').trim()
+                println "benchmark_status: $benchmark_status"
+                if (benchmark_status != "0") {
+                    echo "Fatal error: benchmark failed."
+                    currentBuild.result = 'FAILURE'
+                }
                 println "Create and publish artifacts."
-                sh "python3 ${workspace}/script/jenkins/script/benchmark.py $build_session artifacts"
+                sh "${workspace}/script/jenkins/script/benchmark $build_session artifacts"
                 def art_url="${artifactory_url}"
                 out = sh (script:"ls ${workspace}/validation/build/workload/${workload}/Testing/Temporary", returnStatus:true)
                 if (out == 0) {

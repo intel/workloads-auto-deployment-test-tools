@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 
 CENTOS7_vm="https://cloud.centos.org/centos/7/images/CentOS-7-aarch64-GenericCloud-2009.qcow2"
 CENTOS8_vm="https://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-20210603.0.x86_64.qcow2"

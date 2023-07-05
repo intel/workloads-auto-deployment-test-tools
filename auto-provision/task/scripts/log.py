@@ -1,3 +1,8 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 class Log:
     def __init__(self, flush=0, log_path='default.log'):
 

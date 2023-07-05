@@ -1,3 +1,8 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 version: "3.7"
 
 services:
@@ -47,6 +52,7 @@ services:
       - ./backend:/backend:rw
       - static:/backend/static
       - /root/.aws:/root/.aws
+      - ~/.ssh:/root/.ssh
     ports:
       - "8899:8899"
     networks:

@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 
 #set -o nounset
 
@@ -65,4 +70,4 @@ function addProxy() {
 
 }
 
-addProxy
+# addProxy

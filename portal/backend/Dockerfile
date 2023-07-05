@@ -1,3 +1,8 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 FROM ubuntu:22.04
 
 ENV PYTHONUNBUFFERED 1

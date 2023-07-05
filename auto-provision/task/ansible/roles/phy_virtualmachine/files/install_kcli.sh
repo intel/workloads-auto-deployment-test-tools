@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 
 if ! command -v kcli >/dev/null 2>&1; then
 	echo "start install kcli......"

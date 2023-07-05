@@ -1,3 +1,8 @@
+/*
+Apache v2 license
+Copyright (C) 2023 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+*/
 var stepFormData = {
   // StepWorkload
   Workloads: [],
@@ -12,6 +17,7 @@ var stepFormData = {
   tableData: null,
   checkGreen: false,
   checkRed: false,
+  hostCheckData: "",
   // StepKubernetes
   deploy_kubernetes: false,
   KubernetesInstallMethod: [],

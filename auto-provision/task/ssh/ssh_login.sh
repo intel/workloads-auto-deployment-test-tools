@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 
 rm -rf /root/.ssh/id_rsa*
 ssh-keygen -f /root/.ssh/id_rsa -t rsa -N ''

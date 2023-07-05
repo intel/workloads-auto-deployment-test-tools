@@ -1,3 +1,8 @@
+<!--
+Apache v2 license
+Copyright (C) 2023 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+-->
 <template>
   <div id="app">
     <div id="nav" v-if="$route.name.indexOf('Local') !== -1">

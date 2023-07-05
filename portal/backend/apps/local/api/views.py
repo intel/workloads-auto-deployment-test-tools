@@ -1,3 +1,8 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 from rest_framework import viewsets
 from rest_framework import generics
 from rest_framework.response import Response
@@ -199,11 +204,26 @@ class ProvisionAPIView(generics.CreateAPIView):
 
 class ScheduleCheck(generics.CreateAPIView):
     # queryset = LocalJob.objects.all()
+
     serializer_class = SchedulerSerializer 
+    def intel_host_check(self, all_machines):
+        check_result = []
+        hosts_info = LocalInstance.objects.filter(ip__in=all_machines).values()
+        for host in hosts_info:
+            result = os.popen(f'ssh -o StrictHostKeyChecking=no {host["username"]}@{host["ip"]} -p {host["ssh_port"]} \
+                    lscpu |grep "Model name:"|grep -o "Intel(R)"').read().strip()
+            if result != "Intel(R)":
+                check_result.append(f"Please check {host['hostname']} {host['ip']} available for backend docker container and CPU type is Intel.")
+        return check_result
+
     def post(self, request, *args, **kwargs):
         try:
             print(self.request.data)
             machines = self.request.data.get('machines')
+            check_result = self.intel_host_check(machines)
+            if check_result:
+               return Response({"result":check_result},
+                      status=status.HTTP_400_BAD_REQUEST)
             start_time = self.request.data.get('start_time')
             end_time = self.request.data.get('end_time')
             start_time = parse_datetime(start_time)
@@ -213,13 +233,15 @@ class ScheduleCheck(generics.CreateAPIView):
             for queue_job in queue_jobs:
                 print(queue_job.start_time,queue_job.end_time)
                 if (start_time > queue_job.start_time and start_time < queue_job.end_time) or (end_time > queue_job.start_time and end_time < queue_job.end_time):
-                    return Response(f"job {queue_job.id} already booked machine {queue_job.machines}",
+                    return Response({"result": f"job {queue_job.id} already booked machine {queue_job.machines}"},
                             status=status.HTTP_409_CONFLICT)
 
-            return Response("trigger provision successfully",
+            return Response({"result":"trigger provision successfully"},
                             status=status.HTTP_201_CREATED)
+            # return Response(f"Failed to trigger provision: testttttttt",
+            #                 status=status.HTTP_400_BAD_REQUEST)
         except Exception as ex:
-            return Response(f"Failed to trigger provision: {ex}",
+            return Response({'result':f"Failed to trigger provision: {ex}"},
                             status=status.HTTP_400_BAD_REQUEST)
 
 class ProvisionLogAPIView(generics.ListAPIView):

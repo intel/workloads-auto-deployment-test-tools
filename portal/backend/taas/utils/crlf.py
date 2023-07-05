@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 
 """Replace line breaks, from one format to another."""
 
