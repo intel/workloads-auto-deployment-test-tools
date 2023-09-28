@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # this file include some common functions in validation pipeline
-import paramiko
 import subprocess # nosec
 import logging
 import os

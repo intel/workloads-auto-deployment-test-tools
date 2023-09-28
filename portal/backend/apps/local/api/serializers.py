@@ -136,8 +136,6 @@ class ProvisionFormSerializer(serializers.Serializer):
     deployHost = serializers.ListField(required=True, child=deployHostFormSerializer())
     platforms = serializers.CharField(required=True)
     kubernetes_deploy = serializers.CharField(required=True, validators=[CheckBoolean])
-    kubernetesInstallMethod = serializers.CharField(allow_blank=True)
-    kubernetesArgs = kubernetesArgsFormSerializer()
     jenkins = serializers.CharField(required=True, validators=[CheckBoolean])
     workloadName = serializers.CharField(required=True)
     jsf_repo = serializers.CharField(required=True)

@@ -1,5 +1,0 @@
-10.67.115.241 wie.baohan.network.002.cn root Password124!
-10.67.115.242 wie.baohan.network.003.cn root Password125!
-10.67.115.243 wie.baohan.network.004.cn root Password126!
-10.67.115.244 wie.baohan.network.005.cn root Password127!
-10.67.115.245 wie.baohan.network.006.cn root Password128!

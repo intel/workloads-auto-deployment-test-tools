@@ -33,12 +33,14 @@ export default {
   },
   methods: {
     getLog () {
+      const hostip = location.host.split(":")[0]
+      const ipPattern = /\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g;
       const endpoint = `/local/api/provision_log/?job_id=${this.LogPath}`
       const config = { 'Cache-Control': 'no-store' }
       axios
         .get(endpoint, config)
         .then(response => {
-          this.log = response.data[0].data
+          this.log = response.data[0].data.replaceAll(new RegExp(ipPattern, "g"), hostip)
         })
         .catch(e => {
           this.errors.push(e)

@@ -1,0 +1,16 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+vault_version: "1.13.2"
+vault_repo: "https://releases.hashicorp.com/vault/{{ vault_version }}/vault_{{ vault_version }}_linux_amd64.zip"
+vault_conf_file: "/etc/vault.d/vault.hcl"
+vault_storage_path: "/opt/vault/data"
+vault_port: 8200
+vault_cluster_port: 8201
+
+### By default using self-signed cert, can be replaced with authorized CA signed
+vault_use_selfsigned_cert: true
+vault_tls_cert_file: "{{ playbook_dir }}/../cert/{{ TWDTHost }}:5000.crt"
+vault_tls_key_file: "{{ playbook_dir }}/../cert/{{ TWDTHost }}:5000.key"

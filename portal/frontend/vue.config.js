@@ -21,13 +21,13 @@ module.exports = {
       .filename('bundle.js')
 
     config.optimization
-        	.splitChunks(false)
+      .splitChunks(false)
 
     config.resolve.alias
       .set('__STATIC__', 'static')
 
     config.devServer
-    // the first 3 lines of the following code have been added to the configuration
+      // the first 3 lines of the following code have been added to the configuration
       // .host('10.166.33.34')
       // .port(8080)
       .https(true)
@@ -36,14 +36,18 @@ module.exports = {
   },
   devServer: {
     host: "0.0.0.0",
-    port:8080,
+    port: 8079,
     allowedHosts: "all",
-    liveReload: true,
-    hot: "only"
+    hot: "only",
   },
 
   // uncomment before executing 'npm run build'
   css: {
+    loaderOptions: {
+      scss: {
+        data: `@import "~@/scss/app.scss";`
+      }
+    },
     extract: {
       filename: 'bundle.css',
       chunkFilename: 'bundle.css'

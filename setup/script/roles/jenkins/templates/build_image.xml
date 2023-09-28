@@ -1,0 +1,154 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@1341.vd9fa_65f771dd">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2144.v077a_d1928a_40"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2144.v077a_d1928a_40">
+      <jobProperties/>
+      <triggers/>
+      <parameters>
+        <string>front_job_id</string>
+        <string>registry</string>
+        <string>SUT</string>
+        <string>repo</string>
+        <string>commit</string>
+        <string>platform</string>
+        <string>workload_list</string>
+      </parameters>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.sonyericsson.jenkins.plugins.bfa.model.ScannerJobProperty plugin="build-failure-analyzer@2.4.1">
+      <doNotScan>false</doNotScan>
+    </com.sonyericsson.jenkins.plugins.bfa.model.ScannerJobProperty>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>front_job_id</name>
+          <description>Related Job in frontend.</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>commit</name>
+          <defaultValue>main</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>registry</name>
+          <defaultValue>10.166.44.56:5000</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>platform</name>
+          <defaultValue>ICX</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>workload_list</name>
+          <description>To build workload list, default &quot;&quot; , means all workload. Separated with &quot;;&quot;,e.g: BoringSSL;Bert-Large;CNN;customer/ali/redis</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>repo</name>
+          <description>WSF repo</description>
+          <defaultValue>https://github.com/intel-innersource/applications.benchmarking.benchmark.external-platform-hero-features.git</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>SUT</name>
+          <description>Only support static for now</description>
+          <defaultValue>static</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@3769.v8b_e595e4d40d">
+    <script>/*
+Apache v2 license
+Copyright (C) 2023 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+*/
+
+def build_time = new Date()
+build_time = build_time.format(&quot;MM-dd-yyyy&quot;, TimeZone.getTimeZone(&apos;UTC&apos;))
+def commitId
+
+pipeline {
+	agent {
+		label &apos;node1&apos;
+	}
+	parameters {
+	    string(name: &apos;front_job_id&apos;, defaultValue: &apos;&apos;, description: &apos;Related Job in frontend.&apos;)
+		string(name: &apos;commit&apos;, defaultValue: &apos;main&apos;, description: &apos;&apos;)
+		string(name: &apos;registry&apos;, defaultValue: &apos;10.166.44.56:5000&apos;, description: &apos;&apos;)
+		string(name: &apos;platform&apos;, defaultValue: &apos;ICX&apos;, description: &apos;&apos;)
+		string(name: &apos;workload_list&apos;, defaultValue: &apos;&apos;, description: &apos;To build workload list, default &quot;&quot; , means all workload. Separated with &quot;;&quot;,e.g: BoringSSL;Bert-Large;CNN;customer/ali/redis&apos;)
+		string(name: &apos;repo&apos;, defaultValue: &apos;https://github.com/intel-innersource/applications.benchmarking.benchmark.external-platform-hero-features.git&apos;, description: &apos;WSF repo&apos;)
+		string(name: &apos;SUT&apos;, defaultValue: &apos;static&apos;, description: &apos;Only support static for now&apos;, trim: true)
+	}
+	environment {
+		ONESOURCE_REPO_1 = &quot;github.com/HaitaoLi2Intel/applications.benchmarking.benchmark.platform-hero-features.git&quot;
+	}
+	stages {
+		stage(&apos;download one source repo&apos;){
+			steps {
+				script {
+					if (env.commit) {
+						revision = &quot;${commit}&quot;
+					}
+					else
+					{
+						revision = &quot;master&quot;
+					}
+					sh &quot;rm -rf validation &amp;&amp; git clone ${env.repo} validation &amp;&amp; cd validation &amp;&amp; git checkout ${revision}&quot;
+					commitId = sh(returnStdout: true, script: &apos;cd validation &amp;&amp; git rev-parse HEAD&apos;)
+					commitId = commitId?.substring(0,8)
+					platform = env.platform
+					currentBuild.displayName = &quot;${platform}_${build_time}_${BUILD_ID}_${commitId}&quot;
+				}
+			}
+		}
+		stage(&apos;build all workloads images&apos;) {
+			steps {
+				script {
+			    	sh (
+    					script: &quot;cd validation &amp;&amp;  rm -rf build &amp;&amp; mkdir build &amp;&amp; cd build &amp;&amp; echo accept | cmake -DPLATFORM=${platform} -DBENCHMARK=&apos;&apos; -DREGISTRY=${registry} -DBACKEND=terraform -DRELEASE=${commitId} -DTERRAFORM_SUT=${env.SUT} -DACCEPT_LICENSE=ALL ../&quot;,
+    					returnStdout: true
+    					)
+    				sh (script: &quot;cd validation/build &amp;&amp; make build_terraform&quot;, returnStdout: true)
+			    	if (env.workload_list != &apos;&apos;) {
+    				    workload_list = env.workload_list
+    				    workload_list = workload_list.split(&quot;;&quot;)
+						for (workload in workload_list) {
+    					        println (&quot;=================================Build workload: ${workload} image========================================&quot;)
+    					        sh (returnStdout: true, script: &quot;cd validation/build/workload/${workload} &amp;&amp; make&quot;)
+    					    }
+					}
+					else {
+					    println (&quot;=================================Build all workload images========================================&quot;)
+					    sh (returnStdout: true, script: &quot;cd validation/build &amp;&amp; make&quot;)
+					}
+					println (&quot;=================================Building images finished========================================&quot;)
+				}
+			}
+		}
+	}
+	post {
+		always {
+			script{
+				cleanWs()
+				println &quot;ok&quot;
+			}
+		}
+	}
+}
+
+</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

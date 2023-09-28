@@ -37,6 +37,7 @@ pipeline {
         string(name: 'run_on_specific_hw', defaultValue: '', description: 'hw config id from cluster.yaml, if defined, all test case will run on this config.')
         booleanParam(name: 'run_on_previous_hw', defaultValue: true, description: 'Run on the same HW configuration with previous.')
         string(name: 'filter_case', defaultValue: '', description: 'Regex string for ctest, if set, only run the cases which match this string. If start with !, then these cases will not run.')
+        string(name: 'exclude_case', defaultValue: '', description: 'if set, exclude the cases which match this string. These cases will not run..')
         string(name: 'pull_request_id', defaultValue: '', description: 'used for gated test')
         string(name: 'workload_params', defaultValue: '', description: 'workload exposed params key-value pair. e.g: param1=value1 param2=value2')
         string(name: 'workload_test_config_yaml', defaultValue: '', description: 'low end or high end configuration file from workload folder, will ignore workload_params', trim: true)
@@ -46,6 +47,8 @@ pipeline {
         string(name: 'parallel_run_case_number', defaultValue: '1', description: 'Specifies the number of cases to run in parallel during the workload validation.')
         string(name: 'controller_ip', defaultValue: '', description: 'controller ip')
         string(name: 'worker_ip_list', defaultValue: '', description: 'worker ips, join with \',\' ')
+        booleanParam(name: 'k8s_reset', defaultValue: false, description: 'Reset k8s cluster, be cautious to enable it as it will only setup k8s with selected nodes.')
+        string(name: 'ctest_option', defaultValue: '', description: 'ctest.sh options like --loop to run the ctest commands sequentially.', trim: true)
     }
     environment {
         JENKINS_SCRIPT_REPO = 'https://github.com/intel-sandbox/WSF-VaaS.git'
@@ -118,6 +121,7 @@ pipeline {
     post {
         always {
             script {
+                // println env.BUILD_URL
                 def benchmark_status = readFile(file: 'status').trim()
                 println "benchmark_status: $benchmark_status"
                 if (benchmark_status != "0") {
@@ -125,7 +129,7 @@ pipeline {
                     currentBuild.result = 'FAILURE'
                 }
                 println "Create and publish artifacts."
-                sh "${workspace}/script/jenkins/script/benchmark $build_session artifacts"
+                benchmark_result = sh (script:". /etc/profile > /dev/null 2>&1 && ${workspace}/script/jenkins/script/benchmark $build_session artifacts", returnStatus:true)
                 def art_url="${artifactory_url}"
                 out = sh (script:"ls ${workspace}/validation/build/workload/${workload}/Testing/Temporary", returnStatus:true)
                 if (out == 0) {
@@ -151,8 +155,20 @@ pipeline {
                         server.bypassProxy = true
                         server.upload spec: uploadSpec
                 }
+                script {
+                    if(fileExists("${workspace}/run_uri")){
+                        runs = sh (script:"cat ${workspace}/run_uri", returnStdout:true)
+                        runs = runs.split('\n')
+                        for (run in runs) {
+                            sh "docker kill ${run} || echo 0"
+                        }
+                    }
+                }
                 cleanWs()
-                println 'ok'
+                if (benchmark_result != 0) {
+                    echo "Fatal error: result failed."
+                    currentBuild.result = 'FAILURE'
+                }
             }
         }
     }

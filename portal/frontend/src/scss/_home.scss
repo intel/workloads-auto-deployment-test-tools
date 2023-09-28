@@ -1,0 +1,56 @@
+// Home.vue
+.home-title {
+  font-size: 60px;
+}
+.home-background {
+  background-color: $color-theme-blue-b;
+  height: 100vh;
+}
+.boxes {
+  font-family: $font-family-body-title;
+  color: white;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  white-space: nowrap;
+  text-align: center;
+  // z-index: 1;
+}
+.box {
+  display: inline-block;
+  width: 250px;
+  height: 250px;
+  margin: 20px 50px 20px 50px;
+  padding: 10px;
+  position: relative;
+  background-color: white;
+}
+.box a {
+  font-family: $font-family-title;
+  font-size: 35px;
+  font-weight: bold;
+  display: block;
+  padding: 12px 16px 12px 16px;
+  text-decoration: none;
+  color: $color-theme-blue-a;
+}
+.box a:hover {
+  color: $color-dark-blue;
+}
+.link-spanner {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  box-shadow: rgba(0, 0, 0, 0.15) 0px 15px 25px, rgba(0, 0, 0, 0.05) 0px 5px 10px;
+  &:hover {
+    box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
+  }
+  &:focus {
+    border-color: rgba(0, 0, 0, 0.15);
+    box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
+    color: rgba(0, 0, 0, 0.65);
+  }
+}

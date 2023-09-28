@@ -1,0 +1,27 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+- name: Check required packages
+  shell: command -v {{ item.value }}
+  with_list:
+    - {"key" : "curl", "value": "curl"}
+    - {"key" : "make", "value": "make"}
+    - {"key" : "cmake", "value": "cmake"}
+    - {"key" : "m4",   "value":"m4"}
+    - {"key" : "gawk", "value": "gawk"}
+    - {"key" : "gnupg", "value": "gpg"}
+    - {"key" : "ca-certificates", "value": "update-ca-certificates"}
+    - {"key" : "unzip", "value": "unzip"}
+  register: package_check_results
+  ignore_errors: true
+
+- name: Install required packages
+  become: true
+  package:
+    name: "{{ item.item.key }}"
+    state: present
+  with_list:
+    "{{ package_check_results.results }}"
+  when: item.rc

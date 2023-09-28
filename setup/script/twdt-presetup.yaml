@@ -1,0 +1,38 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+- hosts: twdt_host
+  any_errors_fatal: true
+  gather_facts: no
+  tasks:
+    - name: Construct config_dict
+      ansible.builtin.set_fact:
+        config_dict:
+          TWDTOSPassword: "{{TWDTOSPassword | trim}}"
+          TWDTJenkinsPassword: "{{TWDTJenkinsPassword | trim}}"
+          TWDTJenkinWorkspaceDir: "{{TWDTJenkinWorkspaceDir | trim}}"
+          TWDTJfrogPassword: "{{TWDTJfrogPassword | trim}}"
+          TWDTPortalPassword: "{{TWDTPortalPassword | trim}}"
+          TWDTPostgresPassword: "{{TWDTPostgresPassword | trim}}"
+          TWDTEmailSenderPassword: "{{TWDTEmailSenderPassword | trim}}"
+      no_log: true
+
+    - name: Check input is not blank
+      ansible.builtin.fail:
+        msg: "{{ item.key }} could not be blank."
+      with_dict: "{{ config_dict }}"
+      when:
+        - not item.value and item.key != "TWDTEmailSenderPassword"
+      no_log: true
+
+    - name: Include role {{ role_item }}
+      include_role:
+        name: "{{ role_item }}"
+      loop:
+        - presetup
+        - docker
+        - vault
+      loop_control:
+        loop_var: role_item

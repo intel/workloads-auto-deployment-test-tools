@@ -4,17 +4,20 @@ Copyright (C) 2023 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 -->
 <template>
-<div>
-  <Message :severity="this.messageType" v-show="this.isShowMessage">{{ message }}</Message>
-  <Menubar :model='items'>
-    <template #start>
-      <img alt='logo' src="/static/img/logo.jpg" height='40' class='p-mr-2' />
-    </template>
-    <template #end>
-      <LoginUserComponent />
-    </template>
-  </Menubar>
-</div>
+  <div>
+    <Message :severity="this.messageType" v-show="this.isShowMessage">{{ message }}</Message>
+    <Menubar :model='items' class="font-menu">
+      <template #start>
+        <div style="display: flex!important;">
+            <img title="Here is homepage" alt='logo' src="@/assets/wsf_logo.svg" class='logo-image' style="max-width: 7rem;padding-left:2rem;" @click="clickLogo" />
+            <img title="Here is homepage" alt='logo' src="@/assets/wsf_logo.png" class='logo-image' @click="clickLogo"/>
+        </div>
+      </template>
+      <template #end>
+        <LoginUserComponent />
+      </template>
+    </Menubar>
+  </div>
 </template>
 
 <script>
@@ -30,7 +33,7 @@ export default {
     Message,
     LoginUserComponent
   },
-  data () {
+  data() {
     return {
       errors: [],
       message: '',
@@ -39,39 +42,39 @@ export default {
       items: [
         {
           label: 'Home',
-          icon: 'pi pi-fw pi-home',
+          // icon: 'pi pi-fw pi-home',
           to: '/'
         },
         {
           label: 'Job',
-          icon: 'pi pi-fw pi-book',
+          // icon: 'pi pi-fw pi-book',
           to: '/local/job'
         },
         {
           label: 'Instance',
-          icon: 'pi pi-fw pi-desktop',
+          // icon: 'pi pi-fw pi-desktop',
           to: '/local/instance'
         },
         {
           label: 'Dashboard',
-          icon: 'pi pi-fw pi-chart-line',
+          // icon: 'pi pi-fw pi-chart-line',
           command: () => {
             this.openPage('dashboard')
           }
         },
         {
           label: 'Provision',
-          icon: 'pi pi-fw pi-flag',
+          // icon: 'pi pi-fw pi-flag',
           to: '/local/provision'
         },
         {
           label: 'Config template',
-          icon: 'pi pi-fw pi-file',
+          // icon: 'pi pi-fw pi-file',
           to: '/local/config'
         },
         {
           label: 'Admin',
-          icon: 'pi pi-fw pi-user',
+          // icon: 'pi pi-fw pi-user',
           url: '/admin/',
           target: '_blank'
         }
@@ -91,17 +94,22 @@ export default {
           name: urlName + '_url'
         }
       })
-      .then(response => {
-        if (response.data.length === 0) {
-          this.showMessage('warn', 'There is no ' + urlName + ' in database')
-        } else {
-          console.log(response.data)
-          window.open(response.data[0].value)
-        }
-      })
-      .catch(e => {
-        this.errors.push(e)
-        this.showMessage('error', 'Something goes wrong')
+        .then(response => {
+          if (response.data.length === 0) {
+            this.showMessage('warn', 'There is no ' + urlName + ' in database')
+          } else {
+            console.log(response.data)
+            window.open(response.data[0].value)
+          }
+        })
+        .catch(e => {
+          this.errors.push(e)
+          this.showMessage('error', 'Something goes wrong')
+        })
+    },
+    clickLogo() {
+      this.$router.push({
+        path: '/'
       })
     }
   }

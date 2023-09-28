@@ -17,6 +17,7 @@ prepare_build_terraform () {
     controller_ip=`cat ${WORKSPACE}/pool/cluster.yaml |grep docker_registry | awk '{print $2}'|head -n 1 | tr -d '\r'`
     controller_ip=`eval echo $controller_ip`
     registry="$controller_ip"
+    make_sut_option=""
     #use test_config.yaml from workoad folder
     if [ "$workload_test_config_yaml" != "" ]
     then
@@ -83,6 +84,7 @@ prepare_build_terraform () {
 
     if [ "true" == "$baremetal" ] || [ "true" == "$gated" ]
     then
+        make_sut_option="-DTERRAFORM_SUT=baremetal-default"
         # add variable json in terraform apply
         tf_var="\  terraform plan -var-file=variable-values.json"
         s0="s|terraform plan (.*\&?)|$tf_var \1|"
@@ -97,6 +99,8 @@ prepare_build_terraform () {
     mv $workload_dir/script/terraform/terraform-config.*.tf $workload_dir/terraform/
     k8s_enable_registry="\    k8s_enable_registry : false,"
     wl_enable_reboot="\    wl_enable_reboot : false,"
+    k8s_reset="\    k8s_reset : $k8s_reset,"
+    k8s_abort_on_failure="\    k8s_abort_on_failure : true,"
     cloud_overwrite_setting=()
 
     if [ "true" == "$baremetal" ]
@@ -111,6 +115,8 @@ prepare_build_terraform () {
         cp $workload_dir/terraform/terraform-config.static.tf $workload_dir/script/terraform/terraform-config.baremetal-$config.tf
         sed -i "/.* var.intel_publisher_sut_metadata.*/a $k8s_enable_registry" $workload_dir/script/terraform/terraform-config.baremetal-$config.tf
         sed -i "/.* var.intel_publisher_sut_metadata.*/a $wl_enable_reboot" $workload_dir/script/terraform/terraform-config.baremetal-$config.tf
+        sed -i "/.* var.intel_publisher_sut_metadata.*/a $k8s_reset" $workload_dir/script/terraform/terraform-config.baremetal-$config.tf
+        sed -i "/.* var.intel_publisher_sut_metadata.*/a $k8s_abort_on_failure" $workload_dir/script/terraform/terraform-config.baremetal-$config.tf
     fi
     if [ "true" == "$gated" ]
     then
@@ -162,7 +168,6 @@ prepare_build_terraform () {
         cp -rf ~/.aws $workload_dir/script/csp/
     fi
     make_needed=false
-    make_sut_option=""
     #mcnat only
     if [[ $specific_sut == *"mcnat"* ]]
     then
@@ -406,11 +411,11 @@ ctest_reuse_sut()
         declare -i i=0
         for case in $caselist
         do
-            [ $i -eq 0 ] && ./ctest.sh -R ${case:5}$ --test-config=${WORKSPACE}/test_config.yaml --prepare-sut -V && i+=1 && firstcase=${case:5}
-            [ $i -gt 0 ] && ([ -d sut-logs-${case:5} ] ||cp -rp sut-logs-${firstcase} sut-logs-${case:5}) && ./ctest.sh -R ${case:5}$ --test-config=${WORKSPACE}/test_config.yaml --reuse-sut -V
+            [ $i -eq 0 ] && ./ctest.sh ${ctest_option} -R ${case:5}$ --test-config=${WORKSPACE}/test_config.yaml --prepare-sut -V && i+=1 && firstcase=${case:5}
+            [ $i -gt 0 ] && ([ -d sut-logs-${case:5} ] ||cp -rp sut-logs-${firstcase} sut-logs-${case:5}) && ./ctest.sh ${ctest_option} -R ${case:5}$ --test-config=${WORKSPACE}/test_config.yaml --reuse-sut -V
             cp -rp Testing Testing_${case:5}
         done
-        ./ctest.sh -R ${case:5}$ --test-config=${WORKSPACE}/test_config.yaml --cleanup-sut -V
+        ./ctest.sh ${ctest_option} -R ${case:5}$ --test-config=${WORKSPACE}/test_config.yaml --cleanup-sut -V
 
         [ -f Testing/Temporary/LastTest.log ] && rm -f Testing/Temporary/LastTest.log && cat $(find Testing_* -name LastTest.log ) >> Testing/Temporary/LastTest.log
         [ -f Testing/Temporary/LastTestsFailed.log ] && rm -f Testing/Temporary/LastTestsFailed.log && cat $(find Testing_* -name LastTestsFailed.log ) >> Testing/Temporary/LastTestsFailed.log
@@ -477,7 +482,7 @@ run_workload_benchmark () {
         gated_case=`cd "$workload_build_dir" && ./ctest.sh -N | grep gated | wc -l`
         if [ "$gated_case" != 0 ]
         then
-            cd "$workload_build_dir" && ./ctest.sh -R '_gated$' -j $test_number -VV
+            cd "$workload_build_dir" && ./ctest.sh ${ctest_option} -R '_gated$' -j $test_number -VV
         else
             echo "WARNING: There is no gated case for this Workload, need to check"
             exit 1
@@ -487,47 +492,47 @@ run_workload_benchmark () {
         then
             if [ "true" == "$use_ctest_script" ]
             then
-                cd $workload_build_dir && ./ctest.sh ${CLOUD_OVERWRITE_SETTING} --run=${iteration} --test-config=${WORKSPACE}/test_config.yaml -E '_gated$' -VV
+                cd $workload_build_dir && ./ctest.sh ${CLOUD_OVERWRITE_SETTING} ${ctest_option} --run=${iteration} --test-config=${WORKSPACE}/test_config.yaml -E '_gated$' -VV
             elif [ "true" == "$share_sut" ]
             then
                 cd "$workload_build_dir" && ctest_reuse_sut $filter_case $exclude_case
             else
-                echo "TEST_CONFIG=${WORKSPACE}/test_config.yaml ./ctest.sh -E '_gated$' -j $test_number -VV"
-                cd $workload_build_dir && TEST_CONFIG=${WORKSPACE}/test_config.yaml ./ctest.sh -E '_gated$' -j $test_number -VV
+                echo "TEST_CONFIG=${WORKSPACE}/test_config.yaml ./ctest.sh ${ctest_option} -E '_gated$' -j $test_number -VV"
+                cd $workload_build_dir && TEST_CONFIG=${WORKSPACE}/test_config.yaml ./ctest.sh ${ctest_option} -E '_gated$' -j $test_number -VV
             fi
         elif [ ! -z $filter_case ] && [ -z $exclude_case ]
         then
             if [ "true" == "$use_ctest_script" ]
             then
-                cd $workload_build_dir && ./ctest.sh ${CLOUD_OVERWRITE_SETTING} --run=${iteration} --test-config=${WORKSPACE}/test_config.yaml -E "_gated$" -R $filter_case -VV
+                cd $workload_build_dir && ./ctest.sh ${CLOUD_OVERWRITE_SETTING} ${ctest_option} --run=${iteration} --test-config=${WORKSPACE}/test_config.yaml -E "_gated$" -R $filter_case -VV
             elif [ "true" == "$share_sut" ]
             then
                 cd "$workload_build_dir" && ctest_reuse_sut $filter_case $exclude_case
             else
-                echo "$workload_dir/build/workload/$workload" ./ctest.sh -E "_gated$" -R $filter_case -j $test_number -VV
-                cd "$workload_build_dir" && TEST_CONFIG=${WORKSPACE}/test_config.yaml ./ctest.sh -E "_gated$" -R $filter_case -j $test_number -VV
+                echo "$workload_dir/build/workload/$workload" ./ctest.sh -E "_gated$" ${ctest_option} -R $filter_case -j $test_number -VV
+                cd "$workload_build_dir" && TEST_CONFIG=${WORKSPACE}/test_config.yaml ./ctest.sh -E "_gated$" ${ctest_option} -R $filter_case -j $test_number -VV
             fi
         elif [ -z $filter_case ] && [ ! -z $exclude_case ]
         then
             if [ "true" == "$use_ctest_script" ]
             then
-                cd $workload_build_dir && ./ctest.sh ${CLOUD_OVERWRITE_SETTING} --run=${iteration} --test-config=${WORKSPACE}/test_config.yaml -E "_gated$|$exclude_case" -VV
+                cd $workload_build_dir && ./ctest.sh ${CLOUD_OVERWRITE_SETTING} ${ctest_option} --run=${iteration} --test-config=${WORKSPACE}/test_config.yaml -E "_gated$|$exclude_case" -VV
             elif [ "true" == "$share_sut" ]
             then
                 cd "$workload_build_dir" && ctest_reuse_sut $filter_case $exclude_case
             else
-                echo "$workload_dir/build/workload/$workload" ./ctest.sh -E "_gated$|$exclude_case" -j $test_number -VV
-                cd "$workload_build_dir" && TEST_CONFIG=${WORKSPACE}/test_config.yaml ./ctest.sh -E "_gated$|$exclude_case" -j $test_number -VV
+                echo "$workload_dir/build/workload/$workload" ./ctest.sh ${ctest_option} -E "_gated$|$exclude_case" -j $test_number -VV
+                cd "$workload_build_dir" && TEST_CONFIG=${WORKSPACE}/test_config.yaml ./ctest.sh ${ctest_option} -E "_gated$|$exclude_case" -j $test_number -VV
             fi
         else
             if [ "true" == "$use_ctest_script" ]
             then
-                cd $workload_build_dir && ./ctest.sh ${CLOUD_OVERWRITE_SETTING} -E "_gated$|$exclude_case" -R $filter_case --run=${iteration} --test-config=${WORKSPACE}/test_config.yaml -VV
+                cd $workload_build_dir && ./ctest.sh ${CLOUD_OVERWRITE_SETTING} ${ctest_option} -E "_gated$|$exclude_case" -R $filter_case --run=${iteration} --test-config=${WORKSPACE}/test_config.yaml -VV
             elif [ "true" == "$share_sut" ]
             then
                 cd "$workload_build_dir" && ctest_reuse_sut $filter_case $exclude_case
             else
-                cd "$workload_build_dir" && TEST_CONFIG=${WORKSPACE}/test_config.yaml ./ctest.sh -E "_gated$|$exclude_case" -R $filter_case -j $test_number -VV
+                cd "$workload_build_dir" && TEST_CONFIG=${WORKSPACE}/test_config.yaml ./ctest.sh ${ctest_option} -E "_gated$|$exclude_case" -R $filter_case -j $test_number -VV
             fi
         fi
     fi

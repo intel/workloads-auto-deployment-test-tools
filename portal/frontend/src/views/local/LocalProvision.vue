@@ -5,265 +5,466 @@ SPDX-License-Identifier: Apache-2.0
 -->
 <template>
   <div>
-    <TabView>
-      <TabPanel header="Provision">
-        <template>
-          <div class="p-fluid p-formgrid p-grid ml-2 mr-2">
-            <div class="p-field p-col-12 p-md-12">
-              <el-card class="p-card-background">
-                <el-steps :active="active" finish-status="success">
-                  <el-step title="Workload"></el-step>
-                  <el-step title="DeployHost Args"></el-step>
-                  <el-step title="Kubernetes Args"></el-step>
-                  <el-step title="VM Args"></el-step>
-                  <el-step title="Workload Args"></el-step>
-                  <el-step title="Software Args"></el-step>
-                  <el-step title="System Args"></el-step>
-                  <el-step title="Email"></el-step>
-                </el-steps>
-              </el-card>
-            </div>
-            <div class="p-field p-col-12 p-md-12">
-              <el-card class="p-card-background">
-                <step-workload :formData="stepFormData" v-if="active === 0"></step-workload>
-                <step-host :formData="stepFormData" v-if="active === 1"></step-host>
-                <step-kubernetes :formData="stepFormData" v-if="active === 2"></step-kubernetes>
-                <step-VMArgs :formData="stepFormData" v-if="active === 3"></step-VMArgs>
-                <step-workloadArgs :formData="stepFormData" v-if="active === 4"></step-workloadArgs>
-                <step-softwareArgs :formData="stepFormData" v-if="active === 5"></step-softwareArgs>
-                <step-systemArgs :formData="stepFormData" v-if="active === 6"></step-systemArgs>
-                <step-Email :formData="stepFormData" v-if="active === 7"></step-Email>
-                <div align="right">
-                  <div v-if="this.active === 7 ? true : false">Complete All Forms</div>
-                  <el-button style="margin-top: 12px;" @click="prev">Previous</el-button>
-                  <el-button style="margin-top: 12px;" @click="next">Next</el-button>
-                  <el-button v-if="this.active === 7 ? true : false" style="margin-top: 12px;"
-                    @click="submitProvision">Submit</el-button>
+    <div class="grid">
+      <Accordion :multiple="true" :activeIndex="[0,1,2,3,4]">
+          <AccordionTab v-for="tab in tabs" :key="tab.title" :header="tab.title">
+              <div v-if="tab.content === 'Workload'">
+                <div class="p-formgroup-inline">
+                  <div class="col">
+                    <h5>Workload:</h5>
+                    <Dropdown
+                      v-tooltip="'What workload to validate'"
+                      v-model="workload.selectedWorkload"
+                      :options="workload.allWorkloads"
+                      optionLabel="name"
+                      placeholder="Workload to choose..."
+                      :filter="true"
+                      :showClear="true"
+                    />
+                     <InlineMessage v-if="!workload.selectedWorkload">Required</InlineMessage>
+                  </div>
+                  <div class="col">
+                    <h5>Configuration Version:</h5>
+                    <Dropdown
+                      v-tooltip="'Workload configs, including WSF_repository/Registry/revision by default.'"
+                      v-model="workload.selectedVersion"
+                      :options="workload.versions"
+                      optionLabel="version"
+                      placeholder="Version to provision..."
+                      :filter="true"
+                      :showClear="true"
+                    />
+                     <InlineMessage v-if="!workload.selectedVersion">Required</InlineMessage>
+                  </div>
+                  <div class="col-5"></div>
                 </div>
-              </el-card>
-            </div>
-          </div>
-        </template>
-      </TabPanel>
-    </TabView>
-    <div>
-      <Toast position="top-right" />
+              </div>
+
+              <div v-if="tab.content === 'Host' && workload.selectedWorkload && workload.selectedVersion">
+                <div class="p-formgroup-inline">
+                    <div class="col-3">
+                      <h5>Kubernetes Install Options:</h5>
+                    </div>
+                      <div class="col">
+                        <h5>Host:</h5>
+                        <div>
+                            <InputSwitch v-model="hosts.k8sHostInstall" v-tooltip="'Enable kubernetes to install on hosts'"/>
+                        </div>
+                      </div>
+                    <div class="col">
+                        <h5>VM:</h5>
+                        <div>
+                            <!-- <InputSwitch v-model="hosts.k8sVMInstall" v-tooltip="'Enable kubernetes to install on Linux KVM'"/> -->
+                            <InputSwitch model="false" v-tooltip="'On developing'"/>
+                            <InlineMessage v-if="hosts.k8sVMInstall">Not supported yet</InlineMessage>
+                        </div>
+                    </div>
+                  <div class="col-5"></div>
+                </div>
+                <div v-if="hosts.k8sHostInstall">
+                    <div class="p-formgroup-inline">
+                      <div class="col">
+                        <h5>Kubernetes Controller:</h5>
+                        <Dropdown
+                          v-tooltip="'Choose one host as kubernetes controller'"
+                          v-model="hosts.selectedController"
+                          :options="hosts.machineControllers"
+                          optionLabel="show_name"
+                          placeholder="Controller to provision..."
+                          :filter="true"
+                          :showClear="true"
+                        />
+                        <InlineMessage v-if="!hosts.selectedController">Required</InlineMessage>
+                      </div>
+                      <div class="col">
+                        <h5>Kubernetes Workers:</h5>
+                        <MultiSelect
+                          v-model="hosts.selectedWorker"
+                          :options="hosts.machineWorkers"
+                          optionLabel="show_name"
+                          placeholder="Workers to provision..."
+                          :filter="true"
+                          :showClear="true"
+                          v-tooltip="'Choose one or more hosts as kubernetes worker'"
+                        />
+                        <InlineMessage v-if="hosts.selectedWorker.length === 0">Required</InlineMessage>
+                      </div>
+                      <div class="col">
+                        <h5>Schedule Time:</h5>
+                        <div class="card" style="width: 80%;">
+                            <Calendar v-model="hosts.selectedDatetime" 
+                              selectionMode="range" 
+                              :showTime="true" 
+                              showButtonBar 
+                              :manualInput="false"
+                              :showSeconds="true"
+                              v-tooltip="'Time that to start workload, should not overlap with exists running or in_queue workload.'"
+                            />
+                        <InlineMessage v-if="hosts.dateInValidated">Required, please ensure valid start and end range</InlineMessage>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-if="hosts.conflictedWorkers.length !== 0">
+                        <InlineMessage v-if="hosts.conflictedWorkers.length !== 0">Resolve confilcits is required, please make sure no job already occupied the machine </InlineMessage>
+                      <DataTable class="font table" responsiveLayout="scroll" :value='hosts.conflictedWorkers' columnResizeMode="fit" v-tooltip="'conflicted jobs info'"
+                        :paginator='true' :rows='20'
+                        paginatorTemplate='CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown'
+                        :rowsPerPageOptions='[20, 50, 100]' currentPageReportTemplate='Showing {first} to {last} of {totalRecords}'>
+                        <template #empty>
+                          No conflict hosts found.
+                        </template>
+                        <template #loading>
+                          Loading conflict hosts data. Please wait.
+                        </template>
+                        <Column v-for="col of columns" :field="col.field" :header="col.header" :key="col.field"> 
+                          <template #body="slotProps" v-if="col.field === 'start_time'">
+                            <div>{{ slotProps.data.start_time.slice(0,19).replace('T',' ') }}</div>
+                          </template>
+                          <template #body="slotProps" v-else-if="col.field === 'end_time'">
+                            <div>{{ slotProps.data.end_time.slice(0,19).replace('T',' ') }}</div>
+                          </template>
+                        </Column>
+                      </DataTable>
+                    </div>
+                </div>
+                <div v-if="hosts.k8sVMInstall">
+                  <div class="p-formgroup-inline">
+                    <div class="col">
+                      <h5>KVM Hosts:</h5>
+                      <MultiSelect
+                        v-model="hosts.selectedKVMHosts"
+                        :options="hosts.KVMHosts"
+                        placeholder="kvm hosts to provision..."
+                        optionLabel="show_name"
+                        :filter="true"
+                        :showClear="true"
+                        v-tooltip="'Linux hosts that support KVM'"
+                      />
+                      <InlineMessage v-if="hosts.dateInValidated">Required</InlineMessage>
+                    </div>
+                    <div class="col">
+                      <h5>Schedule Time:</h5>
+                      <div class="card" style="width: 80%;">
+                          <Calendar v-model="hosts.selectedDatetime" 
+                            selectionMode="range" 
+                            :showTime="true" 
+                            showButtonBar 
+                            :manualInput="false"
+                            :showSeconds="true"
+                            v-tooltip="'Time that to start workload.'"
+                          />
+                        <InlineMessage v-if="hosts.dateInValidated">Required</InlineMessage>
+                      </div>
+                    </div>
+                    <div class="col"></div>
+                  </div>
+                  <!-- <div v-if="hosts.conflictedWorkers.length !== 0">
+                      <InlineMessage v-if="hosts.conflictedWorkers.length !== 0">Resolve confilcits is required, please make sure no job already occupied the machine </InlineMessage>
+                      <DataTable class="font table" responsiveLayout="scroll" :value='hosts.conflictedWorkers' columnResizeMode="fit" v-tooltip="'Conficted hosts'"
+                        :paginator='true' :rows='20'
+                        paginatorTemplate='CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown'
+                        :rowsPerPageOptions='[20, 50, 100]' currentPageReportTemplate='Showing {first} to {last} of {totalRecords}'>
+                        <template #empty>
+                          No conflict hosts found.
+                        </template>
+                        <template #loading>
+                          Loading conflict hosts data. Please wait.
+                        </template>
+                        <Column v-for="col of columns" :field="col.field" :header="col.header" :key="col.field"> 
+                        </Column>
+                      </DataTable>
+                  </div> -->
+                  </div>
+                </div>
+
+              <div v-if="tab.content === 'HostParams'">
+                <div v-if="hosts.k8sHostInstall && workload.selectedWorkload && workload.selectedVersion">
+                    <div class="col">
+                        <h5>Reset kubernetes:</h5>
+                        <div>
+                            <InputSwitch v-model="args.reset_k8s"  v-tooltip="'Reset k8s no matter k8s is installed or not.'"/>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="hosts.k8sVMInstall">
+                  <div class="p-formgroup-inline">
+                      <div class="col">
+                        <h5>VM Docker:</h5>
+                        <Dropdown
+                          v-tooltip="'Using docker as VM backend'"
+                          v-model="hosts.selectedVmDocker"
+                          :options="hosts.vmDocker"
+                          placeholder="Workers to provision..."
+                          optionLabel="value"
+                          :filter="true"
+                          :showClear="true"
+                        />
+                      </div>
+                      <div class="col">
+                        <h5>OS Number:</h5>
+                        <Dropdown
+                          v-tooltip="'OS number'"
+                          v-model="hosts.selectedVmOSNumber"
+                          :options="hosts.vmOSNumber"
+                          placeholder="Controller to provision..."
+                          optionLabel="value"
+                          :filter="true"
+                          :showClear="true"
+                        />
+                      </div>
+                      <div class="col">
+                        <h5>OS Type:</h5>
+                        <Dropdown
+                          v-tooltip="'OS type'"
+                          v-model="hosts.selectedVmOSType"
+                          :options="hosts.vmOSType"
+                          placeholder="Workers to provision..."
+                          optionLabel="value"
+                          :filter="true"
+                          :showClear="true"
+                        />
+                      </div>
+                      <div class="col">
+                        <h5>VM Name:</h5>
+                        <InputText type="text" v-model="hosts.vmName"  v-tooltip="'Customed VM name'"/>
+                      </div>
+                  </div>
+                  <div class="p-formgroup-inline">
+                      <div class="col">
+                        <h5>Memory:</h5>
+                        <Dropdown
+                          v-tooltip="'Memory that need to allot'"
+                          v-model="hosts.selectedVmMemory"
+                          :options="hosts.vmMemory"
+                          placeholder="Controller to provision..."
+                          optionLabel="value"
+                          :filter="true"
+                          :showClear="true"
+                        />
+                      </div>
+                      <div class="col">
+                        <h5>CPU Number:</h5>
+                        <Dropdown
+                          v-tooltip="'Cpu quantity that need to allot'"
+                          v-model="hosts.selectedVmCPUNumber"
+                          :options="hosts.vmCPUNumber"
+                          placeholder="Workers to provision..."
+                          optionLabel="value"
+                          :filter="true"
+                          :showClear="true"
+                        />
+                      </div>
+                      <div class="col">
+                        <h5>Disk:</h5>
+                        <Dropdown
+                          v-tooltip="'Disk storage that need to allot'"
+                          v-model="hosts.selectedVmDisk"
+                          :options="hosts.vmDisk"
+                          placeholder="Workers to provision..."
+                          optionLabel="value"
+                          :filter="true"
+                          :showClear="true"
+                        />
+                      </div>
+                      <div class="col"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="tab.content === 'Args' && hosts.selectedController && hosts.selectedWorker.length !== 0">
+                <div class="p-formgroup-inline">
+                  <div class="col">
+                    <h5>WSF Repository:</h5>
+                    <InputText :ref="workload.configs" v-model="workload.configs.jsf_repo" type="text" placeholder="WSF_repo"  v-tooltip="'WSF repositry, default is https://github.com/intel/workload-services-framework.git'">
+                    </InputText>
+                     <InlineMessage v-if="!workload.configs.jsf_repo">Required</InlineMessage>
+                  </div>
+                  <div class="col">
+                    <h5>Registry:</h5>
+                    <Dropdown
+                      v-tooltip="'Registry that default to use'"
+                      v-model="workload.selectedRegistry"
+                      :options="workload.configs.registry"
+                      placeholder="reigstry to provision..."
+                      :filter="true"
+                      :showClear="true"
+                    />
+                  </div>
+                  <div class="col">
+                    <h5>Revision:</h5>
+                    <InputText v-model="workload.configs.commit" type="text" placeholder="commit"  v-tooltip="'Git hub commit'">
+                    </InputText>
+                     <InlineMessage v-if="!workload.configs.commit">Required</InlineMessage>
+                  </div>
+                </div>
+                <div class="p-formgroup-inline">
+                  <div class="col">
+                    <h5>Case Filter:</h5>
+                    <InputText v-model="workload.configs.filter_case" type="text" placeholder="case filter"  v-tooltip="'Which case to run, such as pkm is that case name contains pkm, if leave blank all tests will be ran. Support regular expression'">
+                    </InputText>
+                  </div>
+                  <div class="col">
+                    <h5>Exclude Case:</h5>
+                    <InputText v-model="workload.configs.exclude_case" type="text" placeholder="exclude case"  v-tooltip="'Which case do not run, such as gated is that case name do not contains gated, if leave blank all tests will not be excluded. Support regular expression'">
+                    </InputText>
+                  </div>
+                  <div class="col">
+                    <h5>Workload Parameters:</h5>
+                    <InputText v-model="workload.configs.workload_parameter" type="text" placeholder="woarkload parameters"  v-tooltip="'Workload runtime parameters, such as REQUESTS=1000 for Nginx, more parameters refer to workload\'s readme'">
+                  </InputText>
+                  </div>
+                </div>
+                <div class="p-formgroup-inline">
+                  <div class="col">
+                    <h5>Ctest Options:</h5>
+                    <InputText v-model="workload.configs.ctest_option" type="text" placeholder="ctest option"  v-tooltip="'ctest.sh options like --loop to run the ctest commands sequentially.'">
+                    </InputText>
+                  </div>
+                </div>
+                <div class="col" v-if="workload.selectedWorkload.name === 'Smart-Sport-Analyzer'">
+                  <h5>Upload video files</h5>
+                  <div class="card flex justify-content-center col-4">
+                      <FileUpload name="files" url="/local/api/upload_video_check/" accept="video/*" :maxFileSize="1000000000" 
+                      @before-send="submitUpload" :multiple="true" />
+                  </div>
+                </div>
+              </div>
+              <div v-if="tab.content === 'Notification'">
+                <div class="p-formgroup-inline">
+                  <div class="col">
+                    <h5>SMTP Server:</h5>
+                    <InputText v-model="workload.configs.smtp_server" type="text" placeholder="SMTP server"  v-tooltip="'Email\'s SMTP server and port'"></InputText>
+                     <InlineMessage severity="info" style="background: rgb(0, 199, 253);">Optional</InlineMessage>
+                  </div> 
+                  <div class="col">
+                    <h5>Sender Email:</h5>
+                    <InputText v-model="workload.configs.sender" type="text" placeholder="sender"  v-tooltip="'Email that who would send the info'"></InputText>
+                     <InlineMessage severity="info" style="background: rgb(0, 199, 253);">Optional</InlineMessage>
+                  </div> 
+                 
+                  <div class="col">
+                    <h5>Receivers Email:</h5>
+                    <InputText v-model="workload.configs.receivers" type="text" placeholder="receivers"  v-tooltip="'Emails that who would receive the infon'"></InputText>
+                     <InlineMessage severity="info" style="background: rgb(0, 199, 253);">Optional</InlineMessage>
+                  </div>
+                  <div class="col"></div>
+                </div>
+              </div>
+          </AccordionTab>
+      </Accordion>
+      <div v-if="hosts.selectedController && hosts.selectedWorker.length !== 0 && hosts.conflictedWorkers.length === 0">
+        <Button label="Submit" style="width:8rem;float:right;" @click="submitProvision"  v-tooltip="'Submit that workload configs to jobs.'"></Button>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import ElementUI from 'element-ui'
-import 'element-ui/lib/theme-chalk/index.css'
-import stepFormData from './from'
-import StepWorkload from './StepWorkload'
-import StepHost from './StepHost'
-import StepKubernetes from './StepKubernetes'
-import StepWorkloadArgs from './StepWorkloadArgs'
-import StepSoftwareArgs from './StepSoftwareArgs'
-import StepSystemArgs from './StepSystemArgs'
-import StepVMArgs from './StepVMArgs'
-import StepEmail from './StepEmail'
-import Vue from 'vue'
-import TabView from 'primevue/tabview'
-import Toast from 'primevue/toast'
-import TabPanel from 'primevue/tabpanel'
 import axios from 'axios'
 import { CSRF_TOKEN } from '../../common/csrf_token'
-// import Card from 'primevue/card'
-Vue.use(ElementUI)
+import Button from 'primevue/button';
+import Accordion from 'primevue/accordion';
+import AccordionTab from 'primevue/accordiontab';
+import Dropdown from 'primevue/dropdown'
+import MultiSelect from 'primevue/multiselect'
+import Calendar from 'primevue/calendar';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import InputSwitch from 'primevue/inputswitch';
+import InputText from 'primevue/inputtext';
+import InlineMessage from 'primevue/inlinemessage';
+import Tooltip from 'primevue/tooltip';
+import Tag from 'primevue/tag'
+import FileUpload from 'primevue/fileupload';
+
 export default {
   components: {
-    StepWorkload,
-    StepHost,
-    StepKubernetes,
-    StepWorkloadArgs,
-    StepSystemArgs,
-    StepSoftwareArgs,
-    StepVMArgs,
-    StepEmail,
-    TabView,
-    TabPanel,
-    Toast
+    Button,
+    Accordion,
+    AccordionTab,
+    Dropdown,
+    MultiSelect,
+    Calendar,
+    DataTable,
+    Column,
+    InputSwitch,
+    InputText,
+    InlineMessage,
+    Tooltip,
+    Tag,
+    FileUpload
   },
   data() {
     return {
-      active: 0,
-      stepFormData: JSON.parse(JSON.stringify(stepFormData)),
-      errors: []
+      workload: {
+        selectedWorkload: null,
+        selectedVersion: null,
+        selectedRegistry: null,
+        configs: {
+          "jsf_repo": null,
+          "registry": [],
+          "commit": null,
+          "filter_case": null,
+          "exclude_case": null,
+          "ctest_option": null,
+          "workload_parameter": null,
+        },
+        allWorkloads: [],
+        versions: [],
+      },
+      hosts: {
+        selectedController: null,
+        selectedWorker: [],
+        machineControllers: [],
+        machineWorkers: [],
+        selectedDatetime: [new Date((new Date()).getTime()), new Date((new Date()).getTime() + 3600000)],
+        dateInValidated: false,
+        conflictedWorkers: [],
+        k8sHostInstall: true,
+        k8sVMInstall: false,
+
+        vmCPUNumber: [],
+        vmDisk: [],
+        vmMemory: [],
+        vmOSType: [],
+        vmOSNumber: [],
+        vmName: "",
+        vmDeploy: [],
+        vmDocker: [],
+        selectedVmCPUNumber: "",
+        selectedVmDisk: "",
+        selectedVmMemory: "",
+        selectedVmOSType: "",
+        selectedVmOSNumber: "",
+        selectedVmDeploy: "",
+        selectedVmDocker: "",
+        selectedKVMHosts: [],
+        KVMHosts: [],
+
+      },
+      args: {
+        reset_k8s: false,
+      },
+      columns: null,
+      errors: [],
+      tabs: [
+        { title: 'Choose Workload', content: 'Workload' },
+        { title: 'Choose Hosts', content: 'Host' },
+        { title: 'Host Parameters', content: 'HostParams' },
+        { title: 'Benchmark Parameters', content: 'Args' },
+        { title: 'Notification Parameters', content: 'Notification' }
+      ],
     }
   },
   methods: {
-    next() {
-      if (this.active === 0) {
-        if (!this.checkStepWorkload()) return
-      }
-      if (this.active === 1) {
-        if (!this.checkStepHost()) return
-      }
-      if (this.active === 2) {
-        if (!this.checkStepKubernetes()) return
-      }
-      if (this.active === 3) {
-        if (!this.checkStepVMArgs()) return
-      }
-      if (this.active === 4) {
-        if (!this.checkStepWorkloadArgs()) return
-      }
-      if (this.active === 5) {
-        if (!this.checkStepSoftwareArgs()) return
-      }
-      if (this.active === 6) {
-        if (!this.checkStepSystemArgs()) return
-      }
-      if (this.active++ > 6) this.active = 7
-    },
-    prev() {
-      if (this.active-- < 1) this.active = 0
-    },
-    checkStepWorkload() {
-      if (this.stepFormData.selectedWorkloadName.length !== 0 && this.stepFormData.selectedVersion.length !== 0) {
-        return true
-      } else {
-        this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select BOTH Workload and Version', life: 2000 })
-        return false
-      }
-    },
-    checkStepHost() {
-      if (this.stepFormData.checkGreen) {
-        return true
-      } else {
-        if (this.stepFormData.hostCheckData.result && this.stepFormData.selectedDatetime) {
-          for (var machine of this.stepFormData.hostCheckData.result) {
-            this.$toast.add({ severity: 'error', summary: 'Host Error', detail: machine, life: 5000 })
-          }
-        } else { 
-        this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select HOSTS and available time range', life: 2000 })
-      }
-        return false
-      }
-    },
-    checkStepKubernetes() {
-      if (this.stepFormData.deploy_kubernetes) {
-        if (this.stepFormData.selectedKubernetesInstallMethod !== null && this.stepFormData.selectedKubernetesInstallMethod.length !== 0 &&
-          this.stepFormData.selectedKubernetesVersion !== null && this.stepFormData.selectedKubernetesVersion.length !== 0 &&
-          this.stepFormData.selectedKubernetesNetworkPlugin !== null && this.stepFormData.selectedKubernetesNetworkPlugin.length !== 0 &&
-          this.stepFormData.selectedContainerManager !== null && this.stepFormData.selectedContainerManager.length !== 0 &&
-          this.stepFormData.selectedDashboardEnable !== null && this.stepFormData.selectedDashboardEnable.length !== 0 &&
-          this.stepFormData.selectedHEMLEnable !== null && this.stepFormData.selectedHEMLEnable.length !== 0 &&
-          this.stepFormData.selectedRegistryEnable !== null && this.stepFormData.selectedRegistryEnable.length !== 0 &&
-          this.stepFormData.selectedIngressNginxEnabled !== null && this.stepFormData.selectedIngressNginxEnabled.length !== 0 &&
-          this.stepFormData.selectedIngressNginxHostNetwork !== null && this.stepFormData.selectedIngressNginxHostNetwork.length !== 0 &&
-          this.stepFormData.selectedKrewEnabled !== null && this.stepFormData.selectedKrewEnabled.length !== 0) {
-          return true
-        } else {
-          this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select a value for Kubernetes items', life: 2000 })
-          return false
-        }
-      } else {
-        return true
-      }
-    },
-    checkStepVMArgs() {
-      if (this.stepFormData.vm_deploy_args && this.stepFormData.deploy_kubernetes) {
-        if (this.stepFormData.selectedVMDocker !== null && this.stepFormData.selectedVMDocker.length !== 0 &&
-          this.stepFormData.selectedOSNumber !== null && this.stepFormData.selectedOSNumber.length !== 0 &&
-          this.stepFormData.selectedOSType !== null && this.stepFormData.selectedOSType.length !== 0 &&
-          this.stepFormData.selectedVMName !== null && this.stepFormData.selectedVMName.length !== 0 &&
-          this.stepFormData.selectedMemory !== null && this.stepFormData.selectedMemory.length !== 0 &&
-          this.stepFormData.selectedCPUNumber !== null && this.stepFormData.selectedCPUNumber.length !== 0 &&
-          this.stepFormData.selectedDisk !== null && this.stepFormData.selectedDisk.length !== 0) {
-          return true
-        } else {
-          this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select a value for VM items', life: 2000 })
-          return false
-        }
-      } else {
-        return true
-      }
-    },
-    checkStepWorkloadArgs() {
-      if (this.stepFormData.deploy_workload_args) {
-        if (this.stepFormData.jenkins_args) {
-          if (this.stepFormData.selectedWorkloadName !== null && this.stepFormData.selectedWorkloadName.length !== 0 &&
-            this.stepFormData.selectedJSFRepo !== null && this.stepFormData.selectedJSFRepo.length !== 0 &&
-            this.stepFormData.selectedCommit !== null && this.stepFormData.selectedCommit.length !== 0 &&
-            this.stepFormData.selectedRegistry !== null && this.stepFormData.selectedRegistry.length !== 0) {
-            return true
-          } else {
-            this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select a value for all Jenkins related items', life: 2000 })
-            return false
-          }
-        }
-        if (this.stepFormData.workload_package_args) {
-          if (this.stepFormData.selectedDeployMode !== null && this.stepFormData.selectedDeployMode.length !== 0 &&
-            this.stepFormData.selectedTaskPath !== null && this.stepFormData.selectedTaskPath.length !== 0 &&
-            this.stepFormData.selectedPSFRepo !== null && this.stepFormData.selectedPSFRepo.length !== 0 &&
-            this.stepFormData.selectedWorkloadArgs !== null && this.stepFormData.selectedWorkloadArgs.length !== 0) {
-            return true
-          } else {
-            this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select a value for all Workload Package related items', life: 2000 })
-            return false
-          }
-        }
-        this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select Jenkins or Workload Package', life: 2000 })
-        return false
-      } else {
-        return true
-      }
-    },
-    checkStepSoftwareArgs() {
-      if (this.stepFormData.software_package_args) {
-        if (this.stepFormData.DPDK) {
-          if (this.stepFormData.selectedDPDKArgs === null || this.stepFormData.selectedDPDKArgs.length === 0) {
-            this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'DPDK Args', life: 2000 })
-            return false
-          }
-        }
-        return true
-      } else {
-        return true
-      }
-    },
-    checkStepSystemArgs() {
-      if (this.stepFormData.system_deploy_args) {
-        if (this.stepFormData.os_update) {
-          if (this.stepFormData.selectedOS === null || this.stepFormData.selectedOS.length === 0) {
-            this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select OS', life: 2000 })
-            return false
-          }
-        }
-        if (this.stepFormData.kernel_update) {
-          if (this.stepFormData.selectedKernelVersion === null || this.stepFormData.selectedKernelVersion.length === 0) {
-            this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select Kernel Version', life: 2000 })
-            return false
-          }
-        }
-        if (this.stepFormData.kernel_args_update) {
-          if (this.stepFormData.selectedKernelArgs === null || this.stepFormData.selectedKernelArgs.length === 0) {
-            this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select Kernel Args', life: 2000 })
-            return false
-          }
-        }
-        if (this.stepFormData.bios_update) {
-          if (this.stepFormData.selectedBIOSArgs === null || this.stepFormData.selectedBIOSArgs.length === 0) {
-            this.$toast.add({ severity: 'error', summary: 'Complete the form', detail: 'Select BIOS Args', life: 2000 })
-            return false
-          }
-        }
-        return true
-      } else {
-        return true
-      }
-    },
     getWorkers() {
-      const endpoint = `/local/api/instance/?controller=${this.selectedController[0].ip}`
+      const endpoint = `/local/api/instance/?controller=${this.hosts.selectedController[0].ip}`
       axios
         .get(endpoint)
         .then(response => {
           for (var machine of response.data) {
             machine.label = machine.ip + ',' + machine.instance_type
-            this.machine_workers.push(machine)
+            this.hosts.machineWorkers.push(machine)
           }
         })
         .catch(e => {
@@ -271,136 +472,57 @@ export default {
         })
     },
     submitProvision() {
-      var configsJson = {}
+      var configsJson = {"deployHost": []}
       var machines = []
-      // DeployHost
-      var deployHost = 'deployHost'
-      configsJson[deployHost] = []
-      configsJson.platforms = null
-      if (this.stepFormData.selectedController != null) {
-        for (var host of this.stepFormData.selectedController) {
-          configsJson[deployHost].push({ name: 'controller', ansible_host: host.ip, ip: host.ip, username: host.username, hostname: host.hostname === null ? 'default' : host.hostname, password: host.password })
-        }
-      }
-      if (this.stepFormData.selectedWorker != null) {
+      if (this.hosts.selectedWorker && this.hosts.selectedController) {
+        let host = this.hosts.selectedController
+        configsJson["deployHost"].push({ name: 'controller', ansible_host: host.ip, ip: host.ip, username: host.username, hostname: host.hostname === null ? 'default' : host.hostname, password: "***" })
         var count = 1
-        for (host of this.stepFormData.selectedWorker) {
-          configsJson[deployHost].push({ name: 'node' + String(count), ansible_host: host.ip, ip: host.ip, username: host.username, hostname: host.hostname === null ? 'default' : host.hostname, password: host.password })
-          if (configsJson.platforms === null) {
-            configsJson.platforms = host.instance_type === 'CLX' ? 'ICX' : host.instance_type
-          }
+        for (host of this.hosts.selectedWorker) {
+          configsJson["deployHost"].push({ name: 'node' + String(count), ansible_host: host.ip, ip: host.ip, username: host.username, hostname: host.hostname === null ? 'default' : host.hostname, password: "***" })
+          configsJson.platforms = host.instance_type === 'CLX' ? 'ICX' : host.instance_type
           count += 1
         }
-      }
-      for (host of configsJson[deployHost]) {
+      for (host of configsJson["deployHost"]) {
         machines.push(host.ip)
       }
-      // Deploy Kubernetes
-      var kubernetesDeploy = 'kubernetes_deploy'
-      var kubernetesInstallMethod = 'kubernetesInstallMethod'
-      var kubernetesArgs = 'kubernetesArgs'
-      var kubeVersion = 'kube_version'
-      var kubeNetworkPlugin = 'kube_network_plugin'
-      var containerManager = 'container_manager'
-      var dashboardEnabled = 'dashboard_enabled'
-      var helmEnabled = 'helm_enabled'
-      var registryEnabled = 'registry_enabled'
-      var ingressNginxEnabled = 'ingress_nginx_enabled'
-      var ingressNginxHostNetwork = 'ingress_nginx_host_network'
-      var krewEnabled = 'krew_enabled'
-      console.log(this.stepFormData)
-      configsJson[kubernetesDeploy] = String(this.stepFormData.deploy_kubernetes)
-      configsJson[kubernetesInstallMethod] = this.stepFormData.selectedKubernetesInstallMethod ? this.stepFormData.selectedKubernetesInstallMethod.value : ''
-      configsJson[kubernetesArgs] = {}
-      configsJson[kubernetesArgs][kubeVersion] = this.stepFormData.selectedKubernetesVersion ? this.stepFormData.selectedKubernetesVersion.value : ''
-      configsJson[kubernetesArgs][kubeNetworkPlugin] = this.stepFormData.selectedKubernetesNetworkPlugin ? this.stepFormData.selectedKubernetesNetworkPlugin.value : ''
-      configsJson[kubernetesArgs][containerManager] = this.stepFormData.selectedContainerManager ? this.stepFormData.selectedContainerManager.value : ''
-      configsJson[kubernetesArgs][dashboardEnabled] = this.stepFormData.selectedDashboardEnable ? this.stepFormData.selectedDashboardEnable.value : ''
-      configsJson[kubernetesArgs][helmEnabled] = this.stepFormData.selectedHEMLEnable ? this.stepFormData.selectedHEMLEnable.value : ''
-      configsJson[kubernetesArgs][registryEnabled] = this.stepFormData.selectedRegistryEnable ? this.stepFormData.selectedRegistryEnable.value : ''
-      configsJson[kubernetesArgs][ingressNginxEnabled] = this.stepFormData.selectedIngressNginxEnabled ? this.stepFormData.selectedIngressNginxEnabled.value : ''
-      configsJson[kubernetesArgs][ingressNginxHostNetwork] = this.stepFormData.selectedIngressNginxHostNetwork ? this.stepFormData.selectedIngressNginxHostNetwork.value : ''
-      configsJson[kubernetesArgs][krewEnabled] = this.stepFormData.selectedKrewEnabled ? this.stepFormData.selectedKrewEnabled.value : ''
-      // Deploy Workload
-      // var workloadDeploy = 'workload_deploy'
-      var jenkins = 'jenkins'
-      var workloadName = 'workloadName'
-      var jsfRepo = 'jsf_repo'
-      var commit = 'commit'
-      var registry = 'registry'
-      var filterCase = 'filter_case'
-      var workloadParameter = 'workload_parameter'
-      // var workloadPackage = 'workloadPackage'
-      // var deployMode = 'deployMode'
-      // var taskPath = 'taskPath'
-      // var psfRepo = 'psf_repo'
-      // var args = 'args'
-      // configsJson[workloadDeploy] = String(this.stepFormData.deploy_workload_args)
-      configsJson[jenkins] = String(this.stepFormData.jenkins_args)
-      configsJson[workloadName] = this.stepFormData.selectedWorkloadName.name
-      configsJson[jsfRepo] = this.stepFormData.selectedJSFRepo
-      configsJson[commit] = this.stepFormData.selectedCommit
-      configsJson[registry] = this.stepFormData.selectedRegistry ? this.stepFormData.selectedRegistry.value : ''
-      configsJson[filterCase] = this.stepFormData.selectedCaseFilter
-      configsJson[workloadParameter] = this.stepFormData.selectedWorkloadParameter
-      // configsJson[workloadPackage] = String(this.stepFormData.workload_package_args)
-      // configsJson[deployMode] = this.stepFormData.selectedDeployMode.value
-      // configsJson[taskPath] = this.stepFormData.selectedTaskPath.value
-      // configsJson[psfRepo] = this.stepFormData.selectedPSFRepo.value
-      // configsJson[args] = this.stepFormData.selectedWorkloadArgs.value
-      // Deploy Software
-      var softwarePackage = 'softwarepackage'
-      var softwarePackageArgs = 'softwarepackageArgs'
-      configsJson[softwarePackage] = String(this.stepFormData.software_package_args)
-      configsJson[softwarePackageArgs] = []
-      if (this.stepFormData.DPDK) {
-        configsJson[softwarePackageArgs].push({ Name: 'DPDK', scriptArgs: this.stepFormData.selectedDPDKArgs })
       }
-      // Deploy System
-      var systemDeploy = 'system_deploy'
-      // var osUpdate = 'os_update'
-      // var os = 'os'
-      var KernelUpdate = 'Kernel_update'
-      var kernelVersion = 'kernelVersion'
-      var kernelArgsUpdate = 'kernelArgs_update'
-      var kernelArgs = 'kernelArgs'
-      configsJson[systemDeploy] = String(this.stepFormData.system_deploy_args)
-      // configsJson[osUpdate] = String(this.stepFormData.os_update)
-      // configsJson[os] = this.stepFormData.selectedOS.value
-      configsJson[KernelUpdate] = String(this.stepFormData.kernel_update)
-      configsJson[kernelVersion] = this.stepFormData.selectedKernelVersion ? this.stepFormData.selectedKernelVersion.value : ''
-      configsJson[kernelArgsUpdate] = String(this.stepFormData.kernel_args_update)
-      configsJson[kernelArgs] = this.stepFormData.selectedKernelArgs ? this.stepFormData.selectedKernelArgs.value : ''
-      // Deploy VM
-      var vmDeploy = 'vm_deploy'
-      var vmDocker = 'vm_docker'
-      var vmosArgs = 'vmosArgs'
-      var osNumber = 'osNumber'
-      var osType = 'osType'
-      var vmName = 'vmName'
-      var memory = 'memory'
-      var cpuNumber = 'cpuNumber'
-      var disk = 'disk'
-      configsJson[vmDeploy] = String(this.stepFormData.vm_deploy_args && this.stepFormData.deploy_kubernetes)
-      configsJson[vmDocker] = this.stepFormData.selectedVMDocker ? this.stepFormData.selectedVMDocker.value : ''
-      configsJson[vmosArgs] = {}
-      configsJson[vmosArgs][osNumber] = this.stepFormData.selectedOSNumber ? this.stepFormData.selectedOSNumber.value : ''
-      configsJson[vmosArgs][osType] = this.stepFormData.selectedOSType ? this.stepFormData.selectedOSType.value : ''
-      configsJson[vmosArgs][vmName] = this.stepFormData.selectedVMName
-      configsJson[vmosArgs][memory] = this.stepFormData.selectedMemory ? this.stepFormData.selectedMemory.value : ''
-      configsJson[vmosArgs][cpuNumber] = this.stepFormData.selectedCPUNumber ? this.stepFormData.selectedCPUNumber.value : ''
-      configsJson[vmosArgs][disk] = this.stepFormData.selectedDisk ? this.stepFormData.selectedDisk.value : ''
+      configsJson["kubernetes_deploy"] = String(this.args.reset_k8s)
+      configsJson["jenkins"] = String(true)
+      configsJson["workloadName"] = this.workload.selectedWorkload.name
+      configsJson["jsf_repo"] = this.workload.configs.jsf_repo
+      configsJson["commit"] = this.workload.configs.commit
+      configsJson["registry"] = this.workload.selectedRegistry
+      configsJson["filter_case"] = this.workload.configs.filter_case
+      configsJson["ctest_option"] = this.workload.configs.ctest_option ? this.workload.configs.ctest_option: 'default'
+      configsJson["exclude_case"] = this.workload.configs.exclude_case ? this.workload.configs.exclude_case :'default' 
+      configsJson["workload_parameter"] = this.workload.configs.workload_parameter? this.workload.configs.workload_parameter: ""
       // Email
-      var sender = 'sender'
-      var receivers = 'receivers'
-      configsJson[sender] = this.stepFormData.SenderEmail
-      configsJson[receivers] = this.stepFormData.ReceiverEmail
+      configsJson["smtp"] = this.workload.configs.smtp_server ? this.workload.configs.smtp_server : "default"
+      configsJson["sender"] = this.workload.configs.sender ? this.workload.configs.sender : "default@default.com"
+      configsJson["receivers"] = this.workload.configs.receivers ? this.workload.configs.receivers : "default@default.com"
+      configsJson["kubernetesInstallMethod"] = String(this.hosts.k8sHostInstall) ? "host" : "vm"
+      configsJson["vm_deploy"] = String(this.hosts.k8sVMInstall)
+      configsJson["vm_docker"] = ""
+      configsJson["softwarepackage"] = String("false")
+      configsJson["softwarepackageArgs"] = []
+      configsJson["system_deploy"] = String("false")
+      configsJson["Kernel_update"] = String("false")
+      configsJson["kernelVersion"] = ""
+      configsJson["kernelArgs_update"] = String("false")
+      configsJson["kernelArgs"] = ""
+      configsJson["vmosArgs"] = {
+        "osNumber": this.hosts.selectedVmOSNumber, "osType": this.hosts.selectedVmOSType,
+        "vmName": this.hosts.vmName, "memory": this.hosts.selectedVmMemory,
+        "cpuNumber": this.hosts.selectedVmCPUNumber, "disk": this.hosts.selectedVmDisk
+      }
+
+
       configsJson = JSON.stringify(configsJson)
-      // console.log(configsJson)
+      console.log(configsJson)
       // if (this.$v.$invalid) {
-      var con = false
-      if (con) {
-        alert('Please fill the mandatory info')
+      if (this.hosts.conflictedWorkers.length !== 0) {
+        alert('Please resolve the conflicted hosts first.')
       } else {
         const endpoint = '/local/api/provision/'
         const config = {
@@ -410,23 +532,21 @@ export default {
           }
         }
         const data = {
-          workload: this.stepFormData.selectedWorkloadName.name,
-          config_version: this.stepFormData.selectedVersion.version,
+          workload: this.workload.selectedWorkload.name,
+          config_version: this.workload.selectedVersion.version,
           config_json: configsJson,
           machines: machines,
-          start_time: this.stepFormData.selectedDatetime[0],
-          end_time: this.stepFormData.selectedDatetime[1]
+          schedule_time: this.hosts.selectedDatetime,
         }
         axios
           .post(endpoint, data, config)
           .then(response => {
-            this.$toast.add({ severity: 'success', summary: 'Success', detail: 'Provision success', life: 3000 })
             this.$router.push('job')
           })
           .catch(e => {
-            // console.log(e.response.data)
-            this.$toast.add({ severity: 'error', summary: 'Failed', detail: e.response.data, life: 10000 })
             this.errors.push(e)
+            console.log(e.response)
+            alert(e.response.data)
           })
       }
     },
@@ -435,8 +555,7 @@ export default {
       axios
         .get(endpoint)
         .then(response => {
-          this.stepFormData.Workloads = response.data
-          this.stepFormData.selectedWorkload = 'qat'
+          this.workload.allWorkloads = response.data
           this.loading = false
         })
         .catch(e => {
@@ -448,18 +567,20 @@ export default {
       axios
         .get(endpoint)
         .then(response => {
-          this.stepFormData.MachineControllers = []
-          this.stepFormData.MachineWorkers = []
+          this.hosts.machineControllers = []
+          this.hosts.machineWorkers = []
+          this.hosts.KVMHosts = []
           for (var machine of response.data) {
             machine.instance_type.toUpperCase()
             machine.show_name = machine.ip + ' - ' + machine.instance_type
+            this.hosts.KVMHosts.push(machine)
             if (machine.k8s_role === 'controller,worker') {
-              this.stepFormData.MachineControllers.push(machine)
-              this.stepFormData.MachineWorkers.push(machine)
+              this.hosts.machineControllers.push(machine)
+              this.hosts.machineWorkers.push(machine)
             } else if (machine.k8s_role === 'worker') {
-              this.stepFormData.MachineWorkers.push(machine)
+              this.hosts.machineWorkers.push(machine)
             } else if (machine.k8s_role === 'controller') {
-              this.stepFormData.MachineControllers.push(machine)
+              this.hosts.machineControllers.push(machine)
             }
           }
           this.loading = false
@@ -468,59 +589,178 @@ export default {
           this.errors.push(e)
         })
     },
-    getAllConfigs() {
-      const endpoint = '/local/api/provison_parameter/'
+    getVersions() {
+      const endpoint = '/local/api/workload_system_config/?workload_id=' + this.workload.selectedWorkload.id + '&version_info=true'
       axios
         .get(endpoint)
         .then(response => {
-          // StepKubernetes
-          this.stepFormData.KubernetesInstallMethod = response.data.kubernetes.kubernetesInstallMethod
-          this.stepFormData.KubernetesVersion = response.data.kubernetes.kube_version
-          this.stepFormData.KubernetesNetworkPlugin = response.data.kubernetes.kube_network_plugin
-          this.stepFormData.ContainerManager = response.data.kubernetes.container_manager
-          this.stepFormData.DashboardEnable = response.data.kubernetes.dashboard_enabled
-          this.stepFormData.HEMLEnable = response.data.kubernetes.helm_enabled
-          this.stepFormData.RegistryEnable = response.data.kubernetes.registry_enabled
-          this.stepFormData.IngressNginxEnabled = response.data.kubernetes.ingress_nginx_enabled
-          this.stepFormData.IngressNginxHostNetwork = response.data.kubernetes.ingress_nginx_host_network
-          this.stepFormData.KrewEnabled = response.data.kubernetes.krew_enabled
-          // StepWorkloadArgs
-          this.stepFormData.WorkloadName = []
-          this.stepFormData.JSFRepo = response.data.workload.jsf_repo
-          this.stepFormData.Commit = response.data.workload.commit
-          this.stepFormData.Registry = response.data.workload.registry
-          this.stepFormData.DeployMode = response.data.workload.deployMode
-          this.stepFormData.TaskPath = response.data.workload.taskPath
-          this.stepFormData.PSFRepo = response.data.workload.psf_repo
-          this.stepFormData.WorkloadArgs = response.data.workload.args
-          // StepSystemArgs
-          this.stepFormData.OS = response.data.system.os
-          this.stepFormData.KernelVersion = response.data.system.kernelVersion
-          this.stepFormData.KernelArgs = response.data.system.kernelArgs
-          this.stepFormData.BIOSArgs = response.data.system.biosArgs
-          this.stepFormData.BIOSArgsMapping = response.data.system.valueMapping
-          // StepVMArgs
-          this.stepFormData.VMDocker = response.data.vm.vm_docker
-          this.stepFormData.OSNumber = response.data.vm.osNumber
-          this.stepFormData.OSType = response.data.vm.osType
-          this.stepFormData.VMName = response.data.vm.vmName
-          this.stepFormData.Memory = response.data.vm.memory
-          this.stepFormData.CPUNumber = response.data.vm.cpuNumber
-          this.stepFormData.Disk = response.data.vm.disk
-          // StepEmail
-          this.stepFormData.SenderEmail = response.data.email.sender.value
-          this.stepFormData.ReceiverEmail = response.data.email.receivers.value
+          this.workload.versions = response.data
           this.loading = false
         })
         .catch(e => {
           this.errors.push(e)
         })
-    }
+    },
+    getWorkloadConfigs() {
+      const endpoint = '/local/api/parameters/?workload_id=' + this.workload.selectedWorkload.id + '&version=' + this.workload.selectedVersion.version
+      axios
+        .get(endpoint)
+        .then(response => {
+          // console.log(response.data)
+          let configs = {}
+          for (const config of response.data) {
+            configs[config.parameter] = config.value
+          }
+            configs["registry"] = configs["registry"].split(",")
+            configs["filter_case"] = "pkm"
+            configs["exclude_case"] = ""
+            configs["ctest_option"] = ""
+            configs["smtp_server"] = "smtp.xxx.com:25"
+            this.workload.selectedRegistry = configs["registry"][0]
+            this.workload.configs = configs
+        })
+    },
+    getVMconfigs() {
+      const endpoint = '/local/api/provison_parameter/'
+      axios
+        .get(endpoint)
+        .then(response => {
+          console.log(response.data)
+          this.hosts.vmDocker = response.data.vm.vm_docker
+          this.hosts.vmOSNumber = response.data.vm.osNumber
+          this.hosts.vmOSType = response.data.vm.osType
+          this.hosts.vmMemory = response.data.vm.memory
+          this.hosts.vmCPUNumber = response.data.vm.cpuNumber
+          this.hosts.vmDisk = response.data.vm.disk
+        })
+    },
+    checkWorkerSchedule() {
+      this.hosts.dateInValidated = true
+      this.hosts.conflictedWorkers = []
+      if (this.hosts.selectedDatetime) {
+        // if (this.hosts.selectedDatetime[1] === null) {
+        //   this.hosts.selectedDatetime[1] = new Date(this.hosts.selectedDatetime[0].getTime() + 3600000)
+        // }
+        if (this.hosts.selectedDatetime[0] && this.hosts.selectedDatetime[1]) {
+          if (this.hosts.selectedDatetime[1].getTime() - this.hosts.selectedDatetime[0].getTime() > 300000) {
+            this.hosts.dateInValidated = false
+          }
+          if (this.hosts.selectedController && this.hosts.selectedWorker.length !== 0) {
+
+            const endpoint = '/local/api/schedule_check/'
+            const config = {
+              headers: {
+                'content-type': 'application/json',
+                'X-CSRFTOKEN': CSRF_TOKEN
+              }
+            }
+            const data = {
+              machines: this.hosts.machineWorkers,
+              start_time: this.hosts.selectedDatetime[0].toISOString(),
+              end_time: this.hosts.selectedDatetime[1].toISOString()
+            }
+            axios
+              .post(endpoint, data, config)
+              .then(response => {
+                if (response.status == 200) {
+                  this.hosts.conflictedWorkers = response.data
+                }
+              })
+              .catch(e => {
+                this.errors.push(e)
+              })
+          }
+        }
+      }
+    },
+    submitUpload(event) {
+      event.xhr.setRequestHeader('X-CSRFTOKEN', CSRF_TOKEN)
+      console.log(event.xhr)
+    },
   },
   created() {
     this.getworkloads()
     this.getMachines()
-    this.getAllConfigs()
-  }
+    this.columns = [
+      { field: 'id', header: 'Job ID', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
+      { field: 'workload', header: 'Workload', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
+      { field: 'machines', header: 'Machines', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
+      { field: 'status', header: 'Status', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
+      { field: 'user', header: 'User', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
+      { field: 'start_time', header: 'Start Time', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
+      { field: 'end_time', header: 'End Time', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
+    ]
+  },
+  watch: {
+    'workload.selectedWorkload': function () {
+      if (this.workload.selectedWorkload) {
+        if (this.workload.selectedWorkload.name) {
+          this.getVersions()
+        }
+      }
+      else {
+        this.workload.selectedWorkload = null
+        this.workload.configs = {
+          "jsf_repo": null,
+          "registry": null,
+          "commit": null,
+          "filter_case": null,
+          "workload_parameter": null,
+        }
+        this.workload.selectedVersion = null
+        this.workload.versions = null
+      }
+    },
+    'workload.selectedVersion': function () {
+      if (this.workload.selectedWorkload && this.workload.selectedVersion) {
+        if (this.workload.selectedWorkload.name && this.workload.selectedVersion.version) {
+            this.getWorkloadConfigs()
+        }
+      }
+      else {
+        this.workload.configs = []
+        this.workload.selectedVersion= null
+      }
+    },
+    'hosts.selectedDatetime': function () {
+      this.checkWorkerSchedule()
+    },
+    'hosts.selectedController': function () {
+      this.checkWorkerSchedule()
+    },
+    'hosts.selectedWorker': function () {
+      this.checkWorkerSchedule()
+    },
+    'hosts.k8sHostInstall': function () {
+      if (!this.hosts.k8sHostInstall) {
+        this.hosts.k8sHostInstall = true
+      }
+    },
+    // 'hosts.k8sHostInstall': function () {
+    //   if (this.hosts.k8sHostInstall) {
+    //     this.hosts.k8sVMInstall = false
+    //   } else {
+    //     this.hosts.k8sVMInstall = true
+    //   }
+    // },
+    // 'hosts.k8sVMInstall': function () {
+    //   if (this.hosts.k8sVMInstall) {
+    //     this.getVMconfigs()
+    //     this.hosts.k8sHostInstall = false
+    //   } else {
+    //     this.hosts.k8sHostInstall = true
+    //   }
+    // },
+  },
+  directives: {
+    'tooltip': Tooltip
+}
 }
 </script>
+
+<style lang="scss" scoped>
+  ::v-deep .p-accordion .p-accordion-header .p-accordion-header-link {
+    color: white !important;
+    background: rgb(0, 120, 212) !important;
+  }
+</style>

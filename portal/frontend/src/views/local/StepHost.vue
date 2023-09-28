@@ -59,10 +59,10 @@ SPDX-License-Identifier: Apache-2.0
               </div>
               <div v-show="this.formData.checkRed" align="center">
                 <!-- <el-tooltip :content="this.formData.hostCheckTip"> -->
-                <el-tooltip>
-                  <div  slot="content" v-for="item in this.formData.hostCheckData.result" v-bind:key="item">
+                <el-tooltip :content="this.formData.hostCheckData.result">
+                  <!-- <div  slot="content" v-for="item in this.formData.hostCheckData.result" v-bind:key="item">
                     {{item}}
-                  </div>
+                  </div> -->
                 <el-button type="danger" icon="el-icon-close" circle>Failed</el-button>
                 </el-tooltip>
               </div>

@@ -1,0 +1,186 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+- name: Create log directory
+  shell: |
+    mkdir -p "{{ playbook_dir }}/../../portal/backend/workspace/local/logs/"
+
+# - name: Generate certificate files for portal
+#   become: true
+#   shell: |
+#     cd {{ playbook_dir }}/../../portal/backend/cert/
+#     openssl req -x509 -newkey rsa:2048 -nodes \
+#             -keyout key.pem \
+#             -out cert.pem \
+#             -subj "/CN={{ TWDTHost }}" \
+#             --addext "subjectAltName = IP:{{ TWDTHost }}" &&
+#     chmod 644 cert.pem key.pem
+
+# - name: Set front api in crontab.sh
+#   replace:
+#     path: "{{ playbook_dir }}/../../portal/backend/crontab.sh"
+#     regexp: "(^FRONTAPI=)(.*)"
+#     replace: "FRONTAPI=https://{{ TWDTHost }}:8899"
+
+- name: Set postgres password
+  replace:
+    path: "{{ playbook_dir }}/../../portal/backend/taas/settings_dev_docker.py"
+    regexp: "        'PASSWORD': .*,"
+    replace: "        'PASSWORD': '{{ TWDTPostgresPassword }}',"
+
+- name: Set allow hosts
+  replace:
+    path: "{{ playbook_dir }}/../../portal/backend/taas/settings.py"
+    regexp: "ALLOWED_HOSTS = .*"
+    replace: "ALLOWED_HOSTS = ['localhost', '*']"
+
+- name:  replace POSTGRES_PASSWORD in docker-compose.yml 
+  replace:
+    path: "{{ playbook_dir }}/../../portal/docker-compose.yml"
+    regexp: '      POSTGRES_PASSWORD: .*\n'
+    replace: '      POSTGRES_PASSWORD: "{{ TWDTPostgresPassword }}"\n'
+
+- name: Get VAULT_TOKEN
+  shell: |
+    . /etc/profile > /dev/null 2>&1 && echo -n $VAULT_TOKEN
+  register: vault_token
+
+- name: replace VAULT_ADDR in docker-compose.yml
+  replace:
+    path: "{{ playbook_dir }}/../../portal/docker-compose.yml"
+    regexp: '      VAULT_ADDR: .*\n'
+    replace: '      VAULT_ADDR: http://{{ TWDTHost }}:8200\n'
+
+- name:  replace VAULT_TOKEN in docker-compose.yml 
+  replace:
+    path: "{{ playbook_dir }}/../../portal/docker-compose.yml"
+    regexp: '      VAULT_TOKEN: .*\n'
+    replace: '      VAULT_TOKEN: {{ vault_token.stdout }}\n'
+
+- name: Check timezone
+  command: timedatectl show --property=Timezone --value
+  register: timezone_output
+
+- name: Patch Dockerfile change pip source
+  replace:
+    path: "{{ playbook_dir }}/../../portal/backend/Dockerfile"
+    regexp: "    pip install -r requirements.txt &&.*"
+    replace: "    pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn && \\ "
+  when: timezone_output.stdout == "Asia/Shanghai"
+
+- name: check portal image exists
+  shell: |
+    docker images| grep "portal-frontend" && docker images | grep "portal-backend"
+  register: portal_images_not_exists
+  ignore_errors: true
+
+- name: build portal images - (could also run 'docker compose build <build-arg>' at portal directory)
+  shell: |
+    cd {{ playbook_dir }}/../../portal &&
+    docker compose build --build-arg http_proxy=$http_proxy --build-arg https_proxy=$https_proxy
+  when: portal_images_not_exists.rc
+
+- name: Start up portal by docker-compose
+  shell: |
+    cd {{ playbook_dir }}/../../portal && docker compose down && docker compose up -d
+
+- name: Check backend/frontend/db count
+  shell: |
+    docker ps | grep -Eo "\   frontend|\   postgres|\   backend" | wc -l
+  register: started_container_count
+
+- name: Check TWDT container number
+  ansible.builtin.fail:
+    msg: "TWDT got 3 containers, including frontend/db/backend, please check"
+  when: (started_container_count.stdout | trim | int) < 3
+
+- name: Django manage.py migrate
+  shell: |
+    docker exec backend bash -c "python3 manage.py migrate"
+  register: postgres_status
+  until: ("the database system is starting up" not in postgres_status.stdout and postgres_status.rc == 0)
+  retries: 10
+  delay: 6
+
+- name: Define create super user string
+  set_fact:
+    create_superuser: python3 manage.py shell -c "from django.contrib.auth import get_user_model; User=get_user_model(); User.objects.create_superuser('admin', '{{ TWDTPortalEmail }}', '{{ TWDTPortalPassword }}')"
+
+- name: Create backend superuser
+  shell: |
+    docker exec backend {{ create_superuser }}
+  ignore_errors: true
+  no_log: true
+
+# - name: create instance csv to backend
+#   become: true
+#   template:
+#     src: "LocalInstance.csv.j2"
+#     dest: "{{ playbook_dir }}/../../portal/data/LocalInstance.csv"
+
+- name: copy data files to backend
+  become: true
+  copy:
+    src: "{{ playbook_dir }}/../../portal/data"
+    dest: "{{ playbook_dir }}/../../portal/backend/"
+
+- name: Import all csv
+  shell: |
+    docker exec backend python3 manage.py shell_plus -c '
+    import csv,os
+    model_dic = {"Workload": "Workloads.csv",
+                "ComponentParam": "ComponentParams.csv",
+                "Component": "Components.csv",
+                "ProvisonParameterValue": "ProvisonParameterValue.csv",
+                "WorkloadSystemConfig": "WorkloadSystemConfigs.csv",
+                # "LocalInstance": "LocalInstance.csv",
+                }
+
+    for k in model_dic:
+      if model_dic[k] not in os.listdir("data"):
+        continue
+      print(k,model_dic[k])
+      with open(f"data/{model_dic[k]}") as f:
+        lines = list(csv.reader(f))
+        for cols in lines[1:]:
+          if eval(f"{k}.objects.filter(id=cols[0]).count() == 0"):
+            insert_string=""
+            for value in list(zip(lines[0], cols)):
+              if value[0] in ["values","realValues", "disk", "labels"]:
+                insert_string+=value[0]+"=\"{"+value[1]+"}\","
+              elif value[0] not in ["modified", "created"]:
+                insert_string+=f"{value[0]}=\"{value[1]}\","
+            print(insert_string[:-1])
+            onedata = eval(f"{k}({insert_string[:-1]})")
+            onedata.save()
+    '
+- name: Remove data file
+  become: true
+  shell: |
+    rm -rf "{{ playbook_dir }}/../../portal/backend/data"
+ 
+# - name: Create local setting jenkins_url
+#   shell: |
+#     docker exec backend python3 manage.py shell_plus -c '
+#     if LocalSetting.objects.filter(name="jenkins_url").count() == 0:
+#       onedata = LocalSetting(name="jenkins_url", value="https://{{ portal_host_ip }}:8080")
+#       onedata.save()
+#     else:
+#       LocalSetting.objects.filter(name="jenkins_url").update(value="https://{{ portal_host_ip }}:8080")
+    # '
+
+- name: Create local setting default_registry
+  shell: |
+    docker exec backend python3 manage.py shell_plus -c '
+    if LocalSetting.objects.filter(name="default_registry").count() == 0:
+      onedata = LocalSetting(name="default_registry", value="{{ portal_host_ip }}:5000,")
+      onedata.save()
+    else:
+      LocalSetting.objects.filter(name="default_registry").update(value="{{ portal_host_ip }}:5000,")
+    '
+
+- name: Write crontab request job update every 5 min
+  shell: |
+    ( crontab -l | echo "*/5 * * * * {{ playbook_dir }}/../../portal/backend/crontab.sh" ) | crontab -

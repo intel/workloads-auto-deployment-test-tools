@@ -1,0 +1,69 @@
+jenkins:
+  systemMessage: "Automating Jenkins Setup using Docker and Jenkins Configuration as Code\n\n"
+  globalNodeProperties:
+  - envVars:
+      env:
+      - key: VAULT_ADDR
+        value: http://{{ TWDTHost }}:8200
+      - key: VAULT_TOKEN
+        value: {{ vault_token.stdout }}
+  remotingSecurity:
+   enabled: true
+  securityRealm:
+    local:
+      allowsSignup: true
+      users:
+       - id: "admin"
+         password: "{{ TWDTJenkinsPassword }}"
+  authorizationStrategy:
+    globalMatrix:
+      permissions:
+        - "Overall/Administer:admin"
+        - "Overall/Administer:authenticated"
+  nodes:
+    - permanent:
+        labelString: "node validation"
+        mode: NORMAL
+        name: "node1"
+        numExecutors: 4
+        remoteFS: "{{ TWDTJenkinWorkspaceDir }}"
+        launcher:
+          ssh:
+            host: "{{ TWDTHost }}"
+            port: {{ TWDTHostPort }}
+            credentialsId: node1Pass
+            launchTimeoutSeconds: 60
+            maxNumRetries: 3
+            retryWaitTime: 30
+            sshHostKeyVerificationStrategy:
+              manuallyTrustedKeyVerificationStrategy:
+                requireInitialManualTrust: false
+unclassified:
+  location:
+    url: http://{{ TWDTHost }}:8080/
+  artifactorybuilder:
+    useCredentialsPlugin: true
+    jfrogInstances:
+      - instanceId: artifactory
+        platformUrl: "http://{{ TWDTHost }}:8081/artifactory"
+        artifactoryUrl: "http://{{ TWDTHost }}:8081/artifactory"
+        distributionUrl: "http://{{ TWDTHost }}:8081/distribution"
+        deployerCredentialsConfig:
+          credentialsId: jfrog
+        resolverCredentialsConfig:
+          username: "admin"
+          password: "{{ TWDTJfrogPassword }}"
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: jfrog
+              username: admin
+              password: {{ TWDTJfrogPassword }}
+          - usernamePassword:
+              scope: GLOBAL
+              id: node1Pass
+              username: {{ TWDTHostUser }}
+              password: {{ TWDTOSPassword }}

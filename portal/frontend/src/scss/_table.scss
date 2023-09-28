@@ -1,0 +1,93 @@
+// Table
+$table-header-background-color: #FFFFFF;
+.p-datatable-header {
+  border: 0;
+  background-color: $table-header-background-color !important;
+}
+.table {
+  border-radius: 0;
+  .title-header {
+    font-family: $font-family-title;
+    color: $color-dark-blue;
+    display: flex;
+    .title-header-left {
+      justify-content: flex-start;
+      display: flex;
+      align-items: center;
+      font-size: bold !important;
+    }
+    .title-header-right {
+      flex: 1;
+      justify-content: flex-end;
+      display: flex;
+      align-items: center;
+    }
+  }
+}
+.column-of-datatable-header {
+  font-family: $font-family-title;
+  width: 1em; 
+  text-align: center; 
+  font-color:white; 
+  font-size: 17px; 
+  // background-color:#0078d4;
+  background-color: $color-theme-blue-a !important;
+}
+.column-of-datatable-content {
+  font-family: $font-family-title;
+}
+.badge-color {
+  border-radius: 2px;
+  padding: .25em .5rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: .3px;
+  
+  &.pass {
+    background-color: #C8E6C9;
+    color: #256029;
+  }
+
+  &.fail {
+    background-color: #FFCDD2;
+    color: #C63737;
+  }
+
+  &.suspend {
+    background-color: #FEEDAF;
+    color: #8A5340; 
+  }
+
+  &.new {
+    background-color: #B3E5FC;
+    color: #23547B;
+  }
+}
+.column-header {
+  width: 1rem !important;
+  text-align: left !important;
+  color:white !important;
+  font-size:17px !important;
+  background-color: $color-theme-blue-a !important;
+}
+.column-body {
+  text-align: left !important;
+  color:black !important;
+  background-color:rgba(128, 194, 233, 0.15) !important;
+}
+.multiselect {
+  color: black;
+  width: 200px;
+}
+.status-tag {
+  cursor: pointer;
+  &:hover {
+    box-shadow: rgba(255, 255, 255, .2) 0 3px 15px inset, rgba(0, 0, 0, .1) 0 3px 5px, rgba(0, 0, 0, .1) 0 10px 13px;
+    transform: scale(1.125);
+  }
+}
+.emptyOrLoading {
+  text-align: center;
+  font-size: 20px;
+}

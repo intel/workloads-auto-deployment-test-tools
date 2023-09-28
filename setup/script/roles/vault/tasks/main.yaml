@@ -1,0 +1,36 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+- name: Check if Vault installed
+  shell: |
+    command -v vault
+  register: vault_result
+  ignore_errors: True
+
+- name: Install vault if not installed
+  import_tasks: "{{ playbook_dir }}/roles/vault/tasks/vault_install.yaml"
+  become: true
+  when: vault_result.rc != 0
+
+- name: ensure vault started
+  become: true
+  systemd: 
+    name: vault
+    state: started
+
+- name: Check if Vault already initialized
+  shell: vault status |awk '/^Initialized/{print $2}'
+  register: check_vault_already_init
+  ignore_errors: True
+  environment:
+    VAULT_SKIP_VERIFY: "{{ vault_use_selfsigned_cert }}"
+    VAULT_ADDR: "http://{{ TWDTHost }}:8200"
+
+- name: Init vault if not initialized
+  import_tasks: "{{ playbook_dir }}/roles/vault/tasks/vault_init.yaml"
+  when: not (check_vault_already_init.stdout | bool)
+
+- name: fill parameters to config files
+  import_tasks: "{{ playbook_dir }}/roles/vault/tasks/fill_params.yaml"

@@ -13,21 +13,25 @@ services:
       - main
     ports:
       - "5432:5432"
+    restart: "always"
     volumes:
       - postgresql-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: 'postgres'
-      POSTGRES_PASSWORD: ''
-      POSTGRES_DB: 'taas'
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: ""
+      POSTGRES_DB: "taas"
 
   frontend:
     container_name: frontend
     build:
+      args:
+        - https_proxy
+        - http_proxy
       context: ./frontend
     networks:
       - main
     ports:
-      - "8079:8080"
+      - "8079:8079"
     volumes:
       - ./frontend:/frontend/:rw
       - /frontend/node_modules
@@ -40,18 +44,24 @@ services:
   backend:
     container_name: backend
     build:
+      args:
+        - https_proxy
+        - http_proxy
       context: ./backend
     command: sh -c "./start_dev_docker.sh"
     environment:
       DJANGO_SETTINGS_MODULE: taas.settings_dev_docker
-      VAULT_ADDR: "http://10.166.33.34:8200"
+      VAULT_ADDR: ""
       VAULT_TOKEN: ""
     read_only: true
+    restart: "always"
     volumes:
+      - "/etc/localtime:/etc/localtime:ro"
       - ./frontend:/frontend:rw
       - ./backend:/backend:rw
+      - ../setup/cert/:/backend/cert/:ro
       - static:/backend/static
-      - /root/.aws:/root/.aws
+      - ~/.aws:/root/.aws
       - ~/.ssh:/root/.ssh
     ports:
       - "8899:8899"

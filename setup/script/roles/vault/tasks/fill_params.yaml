@@ -1,0 +1,28 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+- block:
+  - name: Joint vault put command
+    set_fact:
+       final_config_cmd: "vault kv put -format=json kv/wsf-secret-password {{ config_dict.keys() | zip(config_dict.values()) | map('join', '=') | join(' ') }}"
+
+  - name: Execute vault put command to store provision password
+    shell: |
+      . /etc/profile && timeout 1 vault operator unseal $VAULT_KEY1 && timeout 1 vault operator unseal $VAULT_KEY2 && timeout 1 vault operator unseal $VAULT_KEY3
+      {{ final_config_cmd }} \
+      JenkinsUrl="http://{{ TWDTHost }}:8080" \
+      JfrogUrl="http://{{ TWDTHost }}:8082" \
+      TWDTHost="{{ TWDTHost }}" \
+      TWDTHostUser="{{ TWDTHostUser }}" \
+      TWDTHostPort="{{ TWDTHostPort }}" \
+      TWDTPortalUser="admin" \
+      TWDTJenkinsUser="admin" \
+      TWDTPostgresUser="postgres" \
+      TWDTPortalEmail="test@example.com"
+    register: vault_kv_put_output
+
+  environment:
+    VAULT_SKIP_VERIFY: "{{ vault_use_selfsigned_cert }}"
+    VAULT_ADDR: "http://{{ TWDTHost }}:8200"

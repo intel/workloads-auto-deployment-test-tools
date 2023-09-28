@@ -13,14 +13,14 @@ SPDX-License-Identifier: Apache-2.0
       <div>
         <el-form label-position="right" label-width="80px" :model="formData">
           <div class="p-field p-col-3">
-            <h5>Deploy Kubernetes</h5>
+            <h5>Reset Kubernetes</h5>
             <el-switch
-            v-model="deploy_kubernetes"
+            v-model="formData.deploy_kubernetes_v2"
             active-color="#13ce66"
-            inactive-color="#ff4949">
+            inactive-color="#a9a9a9">
             </el-switch>
           </div>
-          <div class="p-field p-col-3" v-show="deploy_kubernetes">
+          <div class="p-field p-col-3" v-show="formData.deploy_kubernetes">
             <h5>Kubernetes Install Method</h5>
             <Dropdown
             v-model="selectedKubernetesInstallMethod"
@@ -167,6 +167,7 @@ export default {
       selectedIngressNginxHostNetwork: null,
       selectedKrewEnabledr: null,
       deploy_kubernetes: this.formData.deploy_kubernetes,
+      deploy_kubernetes_v2: false,
       height: this.formData.deploy_kubernetes ? 700 : 400
     }
   },
@@ -176,12 +177,14 @@ export default {
   methods: {},
   watch: {
     deploy_kubernetes: function () {
-      this.formData.deploy_kubernetes = this.deploy_kubernetes
-      if (this.deploy_kubernetes === true) {
-        this.height = 700
-      } else {
-        this.height = 400
-      }
+      this.formData.deploy_kubernetes = false
+      this.formData.deploy_kubernetes_v2 = this.deploy_kubernetes_v2
+      // this.formData.deploy_kubernetes = this.deploy_kubernetes
+      // if (this.deploy_kubernetes === true) {
+      //   this.height = 700
+      // } else {
+      //   this.height = 400
+      // }
     },
     selectedKubernetesInstallMethod: function () {
       this.formData.selectedKubernetesInstallMethod = this.selectedKubernetesInstallMethod

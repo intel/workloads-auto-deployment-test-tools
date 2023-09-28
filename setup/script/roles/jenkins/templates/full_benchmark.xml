@@ -1,0 +1,422 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@1346.v180a_63f40267">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2144.v077a_d1928a_40"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2144.v077a_d1928a_40">
+      <jobProperties>
+        <string>jenkins.model.BuildDiscarderProperty</string>
+      </jobProperties>
+      <triggers/>
+      <parameters>
+        <string>baremetal</string>
+        <string>session</string>
+        <string>sf_commit</string>
+        <string>repo</string>
+        <string>tdx</string>
+        <string>run_on_previous_hw</string>
+        <string>platforms</string>
+        <string>artifactory_url</string>
+        <string>workload_test_config_yaml</string>
+        <string>limited_node_number</string>
+        <string>workload_params</string>
+        <string>exclude_case</string>
+        <string>registry</string>
+        <string>controller_ip</string>
+        <string>cumulus_tags</string>
+        <string>emon</string>
+        <string>cluster_file</string>
+        <string>worker_ip_list</string>
+        <string>k8s_reset</string>
+        <string>workload_list</string>
+        <string>front_job_id</string>
+        <string>ctest_option</string>
+        <string>django_execution_result_url</string>
+        <string>vm</string>
+        <string>snc4</string>
+        <string>filter_case</string>
+        <string>instance_api</string>
+        <string>customer</string>
+      </parameters>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>60</daysToKeep>
+        <numToKeep>2000</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+    <com.sonyericsson.jenkins.plugins.bfa.model.ScannerJobProperty plugin="build-failure-analyzer@2.4.1">
+      <doNotScan>false</doNotScan>
+    </com.sonyericsson.jenkins.plugins.bfa.model.ScannerJobProperty>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>front_job_id</name>
+          <description>Related job in frontend.</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>platforms</name>
+          <description>Run validation on specific platforms, separate with comma, e.g: SPR,ICX, default as null will run tests on all supported platforms.</description>
+          <defaultValue>ICX</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>sf_commit</name>
+          <defaultValue>main</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>repo</name>
+          <description>github repo address</description>
+          <defaultValue>https://github.com/intel-innersource/applications.benchmarking.benchmark.external-platform-hero-features.git</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>registry</name>
+          <description>docker registry</description>
+          <defaultValue>192.168.0.160:5000</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>instance_api</name>
+          <description>frontend api</description>
+          <defaultValue>https://127.0.0.1:8899/local/api/job/</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>artifactory_url</name>
+          <description>artifactory url</description>
+          <defaultValue>http://127.0.0.1:8082/artifactory</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>django_execution_result_url</name>
+          <description>store execution results</description>
+          <defaultValue>https://127.0.0.1:8899/local/api/test_result/</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>session</name>
+          <description>used for separate testing.</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>workload_list</name>
+          <description>separated with &quot;;&quot;,e.g: BoringSSL;Bert-Large. Or Encode-3dnr;Nginx  This parameter must match with &quot;customer&quot;</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>customer</name>
+          <description>main stands for mainline workloads direct under workload folder not customer workloads</description>
+          <choices>
+            <string>main</string>
+            <string>tencent</string>
+            <string>ali</string>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>emon</name>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>baremetal</name>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>vm</name>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>tdx</name>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>snc4</name>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>filter_case</name>
+          <description>Regex string for ctest, if set, only run the cases which match this string. If start with !, then these cases will not run.</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>exclude_case</name>
+          <description>if set, exclude the cases which match this string. These cases will not run..</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>cumulus_tags</name>
+          <description>use to tag cumulus run especially for release run. different tags are separated with comma. e.g: tag1,tag2</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>run_on_previous_hw</name>
+          <description>Run validation on the same HW configuration with previous.</description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>cluster_file</name>
+          <description>To use different cluster.yaml file in artifactory</description>
+          <defaultValue>cluster.yaml</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>limited_node_number</name>
+          <description>Limit some cases execute if their required nodes are greater than the specified value, and mark them as no_run.</description>
+          <defaultValue>4</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>workload_params</name>
+          <description>workload exposed params key-value pair. e.g: param1=value1 param2=value2</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>workload_test_config_yaml</name>
+          <description>low end or high end configuration file from workload folder, will ignore workload_params</description>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>controller_ip</name>
+          <description>controller ip</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>worker_ip_list</name>
+          <description>worker ips, join with &apos;,&apos; </description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>k8s_reset</name>
+          <description>Reset k8s cluster, be cautious to enable it as it will only setup k8s with selected nodes.</description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>ctest_option</name>
+          <description>ctest.sh options like --loop to run the ctest commands sequentially.</description>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@3787.v8f5dcd14a_fa_c">
+    <script>/*
+Apache v2 license
+Copyright (C) 2023 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+*/
+
+def build_time = new Date()
+build_time = build_time.format(&quot;MM-dd-yyyy&quot;, TimeZone.getTimeZone(&apos;UTC&apos;))
+def sf_revision
+def test_session
+def wl_list
+@NonCPS
+def getSorted(def mapSizeMap){
+    mapSizeMap.sort(){ a, b -&gt; a.key &lt;=&gt; b.key }
+}
+
+pipeline {
+    options {
+        buildDiscarder(logRotator(daysToKeepStr: &apos;60&apos;, numToKeepStr: &apos;2000&apos;))
+    }
+    agent {
+        label &apos;node1&apos;
+    }
+  parameters {
+    string(name: &apos;front_job_id&apos;, defaultValue: &apos;&apos;, description: &apos;Related job in frontend.&apos;)
+    string(name: &apos;platforms&apos;, defaultValue: &apos;ICX&apos;, description: &apos;Run validation on specific platforms, separate with comma, e.g: SPR,ICX, default as null will run tests on all supported platforms.&apos;)
+    string(name: &apos;sf_commit&apos;, defaultValue: &apos;main&apos;, description: &apos;&apos;)
+    string(name: &apos;repo&apos;, defaultValue: &apos;https://github.com/intel-innersource/applications.benchmarking.benchmark.external-platform-hero-features.git&apos;, description: &apos;github repo address&apos;)
+    string(name: &apos;registry&apos;, defaultValue: &apos;192.168.0.160:5000&apos;, description: &apos;docker registry&apos;)
+    string(name: &apos;instance_api&apos;, defaultValue: &apos;https://127.0.0.1:8899/local/api/job/&apos;, description: &apos;frontend api&apos;)
+    string(name: &apos;artifactory_url&apos;, defaultValue: &apos;http://127.0.0.1:8082/artifactory&apos;, description: &apos;artifactory url&apos;)
+    string(name: &apos;django_execution_result_url&apos;, defaultValue: &apos;https://127.0.0.1:8899/local/api/test_result/&apos;, description: &apos;store execution results&apos;)
+    string(name: &apos;session&apos;, defaultValue: &apos;&apos;, description: &apos;used for separate testing.&apos;)
+    string(name: &apos;workload_list&apos;, defaultValue: &apos;&apos;, description: &apos;separated with &quot;;&quot;,e.g: BoringSSL;Bert-Large. Or Encode-3dnr;Nginx  This parameter must match with &quot;customer&quot;&apos;)
+    choice(name: &apos;customer&apos;, choices: [&apos;main&apos;, &apos;tencent&apos;, &apos;ali&apos;], description: &apos;main stands for mainline workloads direct under workload folder not customer workloads&apos;)
+    booleanParam(name: &apos;emon&apos;, defaultValue: &apos;&apos;, description: &apos;&apos;)
+    booleanParam(name: &apos;baremetal&apos;, defaultValue: true, description: &apos;&apos;)
+    booleanParam(name: &apos;vm&apos;, defaultValue: &apos;&apos;, description: &apos;&apos;)
+    booleanParam(name: &apos;tdx&apos;, defaultValue: &apos;&apos;, description: &apos;&apos;)
+    booleanParam(name: &apos;snc4&apos;, defaultValue: &apos;&apos;, description: &apos;&apos;)
+    string(name: &apos;filter_case&apos;, defaultValue: &apos;&apos;, description: &apos;Regex string for ctest, if set, only run the cases which match this string. If start with !, then these cases will not run.&apos;)
+    string(name: &apos;exclude_case&apos;, defaultValue: &apos;&apos;, description: &apos;if set, exclude the cases which match this string. These cases will not run..&apos;)
+    string(name: &apos;cumulus_tags&apos;, defaultValue: &apos;&apos;, description: &apos;use to tag cumulus run especially for release run. different tags are separated with comma. e.g: tag1,tag2&apos;)
+    booleanParam(name: &apos;run_on_previous_hw&apos;, defaultValue: true, description: &apos;Run validation on the same HW configuration with previous.&apos;)
+    string(name: &apos;cluster_file&apos;, defaultValue: &apos;cluster.yaml&apos;, description: &apos;To use different cluster.yaml file in artifactory&apos;)
+    string(name: &apos;limited_node_number&apos;, defaultValue: &apos;4&apos;, description: &apos;Limit some cases execute if their required nodes are greater than the specified value, and mark them as no_run.&apos;)
+    string(name: &apos;workload_params&apos;, defaultValue: &apos;&apos;, description: &apos;workload exposed params key-value pair. e.g: param1=value1 param2=value2&apos;)
+    string(name: &apos;workload_test_config_yaml&apos;, defaultValue: &apos;&apos;, description: &apos;low end or high end configuration file from workload folder, will ignore workload_params&apos;, trim: true)
+    string(name: &apos;controller_ip&apos;, defaultValue: &apos;&apos;, description: &apos;controller ip&apos;)
+    string(name: &apos;worker_ip_list&apos;, defaultValue: &apos;&apos;, description: &apos;worker ips, join with \&apos;,\&apos; &apos;)
+    booleanParam(name: &apos;k8s_reset&apos;, defaultValue: false, description: &apos;Reset k8s cluster, be cautious to enable it as it will only setup k8s with selected nodes.&apos;)
+    string(name: &apos;ctest_option&apos;, defaultValue: &apos;&apos;, description: &apos;ctest.sh options like --loop to run the ctest commands sequentially.&apos;, trim: true)
+  }
+    stages {
+        stage(&apos;download one source repo&apos;){
+            steps {
+                script {
+                    // println env.BUILD_URL
+                    if (env.session != &apos;&apos;){
+                        sf_revision = env.session.split(&apos;_&apos;)[-1]
+                    }
+                    else{
+                        sf_revision = env.sf_commit
+                    }
+
+                    sh &quot;rm -rf validation &amp;&amp; git clone ${env.repo} validation &amp;&amp; cd validation &amp;&amp; git checkout ${sf_revision}&quot;
+
+                    commitId = sh(returnStdout: true, script: &apos;cd validation &amp;&amp; git rev-parse HEAD&apos;)
+                    commitId = commitId?.substring(0,8)
+                    wiki_commitId = &quot;auto-provision&quot;
+
+                    if (env.workload_list &amp;&amp; env.customer == &apos;ali&apos;) {
+                        wl_list = &apos;customer/ali/&apos; + env.workload_list
+                        wl_list = wl_list.replaceAll(&quot;;&quot;, &quot;;customer/ali/&quot;)
+                    }
+                    else if (env.workload_list &amp;&amp; env.customer == &apos;tencent&apos;) {
+                        wl_list = &apos;customer/tencent/&apos; + env.workload_list
+                        wl_list = wl_list.replaceAll(&quot;;&quot;, &quot;;customer/tencent/&quot;)
+                    }else if (env.customer == &apos;ali&apos; || env.customer == &apos;tencent&apos;) {
+                        wl_list = &apos;customer/&apos; + env.customer + &apos;/&apos;
+                    } else {
+                        wl_list = env.workload_list
+                    }
+
+                    build job:&quot;image&quot; , parameters:[
+                        [$class: &quot;StringParameterValue&quot;, name: &quot;front_job_id&quot;, value: &quot;${env.front_job_id}&quot;],
+                        [$class: &quot;StringParameterValue&quot;, name: &quot;commit&quot;, value: &quot;${env.sf_commit}&quot;],
+                        [$class: &quot;StringParameterValue&quot;, name: &quot;registry&quot;, value: &quot;${env.registry}&quot;],
+                        [$class: &quot;StringParameterValue&quot;, name: &quot;platform&quot;, value: &quot;${env.platforms}&quot;],
+                        [$class: &quot;StringParameterValue&quot;, name: &quot;workload_list&quot;, value: &quot;${wl_list}&quot;],
+                        [$class: &quot;StringParameterValue&quot;, name: &quot;repo&quot;, value: &quot;${env.repo}&quot;]
+                        ]
+
+                    currentBuild.displayName = &quot;${env.customer}_${build_time}_${BUILD_ID}_${wiki_commitId}_${commitId}&quot;
+                    if (env.session != &apos;&apos;) {
+                        test_session = env.session
+                    }
+                    else {
+                        if (env.cumulus_tags != &apos;&apos;) {
+                            test_session = &quot;${env.customer}_release_${build_time}_${BUILD_ID}_${wiki_commitId}_${commitId}&quot;
+                        }
+                        else {
+                            test_session = &quot;${env.customer}_${build_time}_${BUILD_ID}_${wiki_commitId}_${commitId}&quot;
+                        }
+                    }
+                }
+            }
+        }
+        stage(&apos;run all workloads&apos;) {
+            steps {
+                script {
+                    def platforms
+                    if (env.platforms != &apos;&apos;){
+                        platforms = env.platforms
+                        platforms = platforms.split(&quot;,&quot;);
+                    }
+                    else {
+                        platforms = sh (
+                        script: &apos;cd validation &amp;&amp; cat workload/platforms&apos;,
+                        returnStdout: true
+                        )
+                        platforms = platforms.split(&quot;\n&quot;);
+                    }
+
+                    def files
+                    if (env.workload_list &amp;&amp; env.customer != &apos;main&apos;) {
+                        files = wl_list.split(&apos;;&apos;)
+                    } else if (env.workload_list &amp;&amp; env.customer == &apos;main&apos;) {
+                        files = env.workload_list.split(&apos;;&apos;)
+                    } else if (env.customer != &apos;main&apos; &amp;&amp; !env.workload_list) {
+                        files = sh (
+                        script: &quot;cd validation/workload/customer &amp;&amp; find ${env.customer} -mindepth 2 -maxdepth 2 -name validate.sh&quot;,
+                        returnStdout: true
+                        )
+                        files = files.replaceAll(&apos;/validate.sh&apos;,&apos;&apos;).split(&quot;\n&quot;)
+                        files = files.collect {&quot;customer/&quot; + it}
+                    }
+                    else {
+                        files = sh (
+                        script: &apos;cd validation &amp;&amp; find workload -mindepth 2 -maxdepth 2 -name validate.sh&apos;,
+                        returnStdout: true
+                        )
+                        files = files.replaceAll(&apos;/validate.sh&apos;,&apos;&apos;)
+                        files = files.replaceAll(&apos;workload/&apos;,&apos;&apos;).split(&quot;\n&quot;);
+                    }
+
+                    def workloads = [:]
+                    for (p in platforms) {
+                        for (f in files) {
+                            def fvar
+                            fvar = &quot;${f}&quot;.split(&quot;/&quot;)[-1]
+                            def pvar = &quot;${p}&quot;
+							workloads[&quot;${pvar}/${fvar}&quot;] = {
+								stage(&quot;${pvar}/${fvar}&quot;) {
+									script {
+										build job:&quot;benchmark&quot; , parameters:[
+                                            [$class: &quot;StringParameterValue&quot;, name: &quot;front_job_id&quot;, value: &quot;${env.front_job_id}&quot;],
+											[$class: &quot;StringParameterValue&quot;, name: &quot;platform&quot;, value: &quot;${pvar}&quot;],
+											[$class: &quot;StringParameterValue&quot;, name: &quot;repo&quot;, value: &quot;${env.repo}&quot;],
+											[$class: &quot;StringParameterValue&quot;, name: &quot;registry&quot;, value: &quot;${env.registry}&quot;],
+											[$class: &quot;StringParameterValue&quot;, name: &quot;instance_api&quot;, value: &quot;${env.instance_api}&quot;],
+											[$class: &quot;StringParameterValue&quot;, name: &quot;artifactory_url&quot;, value: &quot;${env.artifactory_url}&quot;],
+                                            [$class: &quot;StringParameterValue&quot;, name: &quot;django_execution_result_url&quot;, value: &quot;${env.django_execution_result_url}&quot;],
+											[$class: &quot;StringParameterValue&quot;, name: &quot;commit_id&quot;, value: &quot;${env.sf_commit}&quot;],
+											[$class: &quot;BooleanParameterValue&quot;, name: &quot;emon&quot;, value: &quot;${emon}&quot;],
+											[$class: &quot;BooleanParameterValue&quot;, name: &quot;vm&quot;, value: &quot;${vm}&quot;],
+											[$class: &quot;BooleanParameterValue&quot;, name: &quot;baremetal&quot;, value: &quot;${baremetal}&quot;],
+											[$class: &quot;BooleanParameterValue&quot;, name: &quot;snc4&quot;, value: &quot;${snc4}&quot;],
+											[$class: &quot;BooleanParameterValue&quot;, name: &quot;tdx&quot;, value: &quot;${tdx}&quot;],
+											[$class: &quot;StringParameterValue&quot;, name: &quot;workload&quot;, value: &quot;${fvar}&quot;],
+											[$class: &quot;StringParameterValue&quot;, name: &quot;session&quot;, value: &quot;${test_session}&quot;],
+											[$class: &quot;BooleanParameterValue&quot;, name: &quot;run_on_previous_hw&quot;, value: &quot;${run_on_previous_hw}&quot;],
+											[$class: &quot;StringParameterValue&quot;, name: &quot;cumulus_tags&quot;, value: &quot;${cumulus_tags}&quot;],
+											[$class: &quot;StringParameterValue&quot;, name: &quot;filter_case&quot;, value: &quot;${filter_case}&quot;],
+											[$class: &quot;StringParameterValue&quot;, name: &quot;exclude_case&quot;, value: &quot;${exclude_case}&quot;],
+											[$class: &quot;StringParameterValue&quot;, name: &quot;customer&quot;, value: &quot;${env.customer}&quot;],
+											[$class: &apos;StringParameterValue&apos;, name: &apos;limited_node_number&apos;, value: &quot;${limited_node_number}&quot;],
+											[$class: &apos;StringParameterValue&apos;, name: &apos;cluster_file&apos;, value: &quot;${cluster_file}&quot;],
+											[$class: &apos;StringParameterValue&apos;, name: &apos;workload_params&apos;, value: &quot;${workload_params}&quot;],
+											[$class: &apos;StringParameterValue&apos;, name: &apos;workload_test_config_yaml&apos;, value: &quot;${workload_test_config_yaml}&quot;],
+											[$class: &apos;StringParameterValue&apos;, name: &apos;controller_ip&apos;, value: &quot;${controller_ip}&quot;],
+											[$class: &apos;StringParameterValue&apos;, name: &apos;worker_ip_list&apos;, value: &quot;${worker_ip_list}&quot;],
+                                            [$class: &apos;BooleanParameterValue&apos;, name: &apos;k8s_reset&apos;, value: &quot;${k8s_reset}&quot;],
+											[$class: &quot;StringParameterValue&quot;, name: &quot;ctest_option&quot;, value: &quot;${ctest_option}&quot;],
+										]
+
+									}
+								}
+							}
+                        }
+                    }
+                    def sorted_workloads = getSorted(workloads)
+                    parallel sorted_workloads
+                }
+            }
+        }
+    }
+    post {
+        always {
+            script{
+                cleanWs()
+                println &quot;ok&quot;
+            }
+        }
+    }
+}
+
+</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

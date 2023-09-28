@@ -9,6 +9,8 @@
 FROM node:lts-alpine3.18
 
 ENV CONTAINER_PATH /frontend
+ARG https_proxy
+ARG http_proxy
 
 WORKDIR $CONTAINER_PATH
 

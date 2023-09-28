@@ -1,0 +1,22 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+
+- name: "Ensure {{ dev_cert_conf_dir }} exists"
+  file:
+    path: "{{ dev_cert_conf_dir }}"
+    state: directory
+
+- name: Check if certificate exists
+  stat:
+    path: "{{ dev_cert_conf_dir }}/{{ dev_cert_host }}:{{ dev_registry_port }}.key"
+  register: cert
+
+- name: Detect OS
+  shell:
+    cmd: ". /etc/os-release; echo $ID"
+    executable: /bin/bash
+  register: os
+  when: not cert.stat.exists

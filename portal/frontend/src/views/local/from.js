@@ -20,6 +20,7 @@ var stepFormData = {
   hostCheckData: "",
   // StepKubernetes
   deploy_kubernetes: false,
+  deploy_kubernetes_v2: false,
   KubernetesInstallMethod: [],
   selectedKubernetesInstallMethod: { value: '' },
   KubernetesVersion: [],

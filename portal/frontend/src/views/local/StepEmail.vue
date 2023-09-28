@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
   <div class="p-field p-col-6 p-md-6 text-align-left">
     <el-card class="box-card" style="height: 400px;">
       <div slot="header" class="clearfix">
-        <span>VM Args</span>
+        <span>Emails(Optional)</span>
       </div>
       <div>
         <el-form label-position="right" label-width="80px" :model="formData">

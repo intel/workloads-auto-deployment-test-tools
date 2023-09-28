@@ -1,0 +1,16 @@
+@font-face {
+    font-family: "IntelOneDisplayAR";
+    src: url('./IntelOneDisplayAR-Regular.ttf') format("truetype");
+}
+@font-face {
+    font-family: "IntelClear";
+    src: url('./IntelClear_Rg.ttf') format("truetype");
+}
+@font-face {
+    font-family: "IntelOneText";
+    src: url('./IntelOneText-Regular.ttf') format("truetype");
+}
+@font-face {
+    font-family: "IntelClearPro";
+    src: url('./IntelClearPro_Bd.ttf') format("truetype");
+}

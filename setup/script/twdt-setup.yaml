@@ -1,0 +1,17 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+- hosts: twdt_host
+  any_errors_fatal: true
+  gather_facts: no
+  tasks:
+    - name: Include role {{ role_item }}
+      include_role:
+        name: "{{ role_item }}"
+      loop:
+        - jenkins
+        - portal
+      loop_control:
+        loop_var: role_item

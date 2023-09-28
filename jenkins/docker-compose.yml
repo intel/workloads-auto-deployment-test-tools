@@ -11,6 +11,9 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile.jenkins
+      args:
+        - https_proxy
+        - http_proxy
     volumes:
       - jenkins_home:/var/jenkins_home/:rw
     restart: "always"
@@ -24,11 +27,14 @@ services:
     privileged: true
     volumes:
       - registry_home:/var/lib/registry
+      - ../setup/script/../cert/:/etc/wsf/certs:ro
     restart: "always"
     ports:
       - "5000:5000"
     environment:
       - "REGISTRY_STORAGE_DELETE_ENABLED=true"
+      - "REGISTRY_HTTP_TLS_KEY=/etc/wsf/certs/key.pem"
+      - "REGISTRY_HTTP_TLS_CERTIFICATE=/etc/wsf/certs/cert.pem"
     networks:
       - main
   jfrog:
@@ -36,7 +42,7 @@ services:
     image: docker.bintray.io/jfrog/artifactory-oss
     privileged: true
     volumes:
-      - jfrog_var:/var
+      - jfrog_var:/var/opt/jfrog/artifactory
     restart: "always"
     ports:
       - "8081:8081"

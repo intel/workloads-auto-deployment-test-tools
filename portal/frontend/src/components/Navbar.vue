@@ -4,16 +4,19 @@ Copyright (C) 2023 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 -->
 <template>
-<div>
-  <Menubar :model='items'>
-    <template #start>
-      <img alt='logo' src="/static/img/logo.jpg" height='40' class='p-mr-2' />
-    </template>
-    <template #end>
-      <LoginUserComponent />
-    </template>
-  </Menubar>
-</div>
+  <div>
+    <Menubar :model='items' class="font-menu">
+      <template #start>
+        <div style="display: flex!important;">
+            <img title="Here is homepage" alt='logo' src="@/assets/wsf_logo.svg" class='logo-image' style="max-width: 7rem;padding-left:2rem;"/>
+            <img title="Here is homepage" alt='logo' src="@/assets/wsf_logo.png" class='logo-image' />
+        </div>
+      </template>
+      <template #end>
+        <LoginUserComponent />
+      </template>
+    </Menubar>
+  </div>
 </template>
 
 <script>
@@ -27,49 +30,33 @@ export default {
     Menubar,
     LoginUserComponent
   },
-  data () {
+  data() {
     return {
       items: [
         {
           label: 'Home',
-          icon: 'pi pi-fw pi-home',
           to: '/'
         },
         {
-          label: 'Local',
-          icon: 'pi pi-fw pi-book',
+          label: 'Provision',
           to: '/local/job'
         },
         {
           label: 'Admin',
-          icon: 'pi pi-fw pi-user',
           url: '/admin/',
           target: '_blank'
         },
         {
           label: 'API',
-          icon: 'pi pi-fw pi-book',
           url: '/swagger/',
           target: '_blank'
         },
         {
           label: 'Guide',
-          icon: 'pi pi-fw pi-book',
           items: [
             {
               label: 'User Guide',
-              icon: 'pi pi-fw pi-book',
-              to: '/guide/user'
-            },
-            {
-              label: 'Admin Guide',
-              icon: 'pi pi-fw pi-book',
-              to: '/guide/admin'
-            },
-            {
-              label: 'Onboarding Guide',
-              icon: 'pi pi-fw pi-book',
-              to: '/guide/onboarding'
+              to: 'https://github.com/intel/workloads-auto-deployment-test-tools/tree/main/doc/EN/user-guide.md'
             }
           ]
         }

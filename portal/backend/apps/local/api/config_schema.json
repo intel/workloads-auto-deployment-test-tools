@@ -45,51 +45,7 @@
         },
         "kubernetesInstallMethod": {
             "type": "string",
-            "enum": ["", "host", "vm", "docker"]
-        },
-        "kubernetesArgs": {
-            "type": "object",
-            "properties": {
-                "kube_version": {
-                    "type": "string"
-                },
-                "kube_network_plugin": {
-                    "type": "string",
-                    "enum": ["", "cilium", "calico", "weave", "flannel"]
-                },
-                "container_manager": {
-                    "type": "string",
-                    "enum": ["", "docker", "crio", "containerd"]
-                },
-                "dashboard_enabled": {
-                    "type": "string",
-                    "enum": ["true", "false"]
-                },
-                "helm_enabled": {
-                    "type": "string",
-                    "enum": ["true", "false"]
-                },
-                "registry_enabled": {
-                    "type": "string",
-                    "enum": ["true", "false"]
-                },
-                "ingress_nginx_enabled": {
-                    "type": "string",
-                    "enum": ["true", "false"]
-                },
-                "ingress_nginx_host_network": {
-                    "type": "string",
-                    "enum": ["true", "false"]
-                },
-                "krew_enabled": {
-                    "type": "string",
-                    "enum": ["true", "false"]
-                }
-            },
-            "required": [
-                 "kube_version", "kube_network_plugin", "container_manager", "dashboard_enabled", "helm_enabled", "registry_enabled", "ingress_nginx_enabled", "ingress_nginx_host_network", "krew_enabled"
-            ],
-            "additionalProperties": false
+            "enum": ["host", "vm"]
         },
         "jenkins": {
             "type": "string",
@@ -108,6 +64,12 @@
             "type": "string"
         },
         "filter_case": {
+            "type": "string"
+        },
+        "exclude_case": {
+            "type": "string"
+        },
+        "ctest_option": {
             "type": "string"
         },
         "workload_parameter": {
@@ -185,6 +147,9 @@
            ],
            "additionalProperties": false
         },
+        "smtp": {
+            "type": "string"
+        },
         "sender": {
             "type": "string",
             "format": "email"
@@ -195,8 +160,8 @@
         }
     },
     "required": [
-        "deployHost", "platforms", "kubernetes_deploy", "kubernetesInstallMethod", "kubernetesArgs", "jenkins", "workloadName", "jsf_repo", "commit", "registry", "filter_case", "workload_parameter",
-        "softwarepackage", "softwarepackageArgs", "system_deploy", "Kernel_update", "kernelVersion", "kernelArgs_update", "kernelArgs", "vm_deploy", "vm_docker", "vmosArgs", "sender", "receivers"
+        "deployHost", "platforms", "kubernetes_deploy", "kubernetesInstallMethod", "jenkins", "workloadName", "jsf_repo", "commit", "registry", "filter_case", "exclude_case", "ctest_option", "workload_parameter",
+        "softwarepackage", "softwarepackageArgs", "system_deploy", "Kernel_update", "kernelVersion", "kernelArgs_update", "kernelArgs", "vm_deploy", "vm_docker", "vmosArgs"
    ],
    "additionalProperties": false
 }

@@ -4,101 +4,72 @@ Copyright (C) 2023 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 -->
 <template>
-<div>
-  <ConfirmDialog></ConfirmDialog>
-  <div class="card-header text-center">Workloads Config</div>
-    <div v-show="showConfigs">
-      <DataTable
-        :value='configWorkloads'
-        :paginator='true'
-        :autoLayout='true'
-        :showGridlines='true'
-        responsiveLayout="scroll"
-        :resizableColumns='true'
-        columnResizeMode='expand'
-        :filters="filters"
-        :loading="loading"
-        :selection.sync="selectedIds"
-        :rows='50'
+  <div class="font main-content">
+    <ConfirmDialog class="font"></ConfirmDialog>
+    <div v-show="showConfigs" class="font">
+      <DataTable :value='configWorkloads' :paginator='true' :autoLayout='true'
+        responsiveLayout="scroll" :resizableColumns='true' columnResizeMode='expand' :filters="filters" :loading="loading"
+        :selection.sync="selectedIds" :rows='50'
         paginatorTemplate='CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown'
-        :rowsPerPageOptions='[20,50,100]'
-        currentPageReportTemplate='Showing {first} to {last} of {totalRecords}'
-      >
-        <template #header>
-          <div style="text-align: right">
-            <i class="pi pi-search mt-1 mr-2"></i>
-            <InputText
-              v-model="filters['global']"
-              placeholder="Global Search"
-              class="p-inputtext-sm"
-              size="50"
-            />
+        :rowsPerPageOptions='[20, 50, 100]' currentPageReportTemplate='Showing {first} to {last} of {totalRecords}'>
+        <template #header class="p-datatable-header">
+          <div class="title-header">
+            <div class="title-header-left">
+              <h4 class="m-0"><b>Workloads Config</b></h4>
+            </div>
+            <div class="title-header-right">
+              <span class="p-input-icon-left">
+                  <i class="pi pi-search" />
+                  <InputText class="p-inputtext-sm font" v-model="filters['global']['value']" placeholder="Global Search" />
+                  <Button type="button" icon="pi pi-refresh" class="p-button-text font" @click="refresh" />
+              </span>
+            </div>
           </div>
         </template>
         <template #empty>
+          <div class="emptyOrLoading">
             No jobs found.
+          </div>
         </template>
         <template #loading>
-            Loading job data. Please wait.
+          <div class="emptyOrLoading">
+          Loading job data. Please wait.
+          </div>
         </template>
-        <Column
-          v-for="col of columns"
-          :field="col.field"
-          :header="col.header"
-          :key="col.field"
-          headerStyle="width: 1em; text-align: center; color:black; font-size:20px; background-color:#0078d4" bodyStyle="text-align: center; color:black; background-color:#80c2e926"
-        >
-        <template #body="slotProps" v-if="col.field === 'status'">
-            <Button
-             class="p-button-success p-button-sm"
-             :label="slotProps.data.status"
-             v-if="slotProps.data.status === 'FINISHED'">
+        <Column v-for="col of columns" :field="col.field" :header="col.header" :key="col.field" headerClass="column-header" bodyClass="column-body">
+          <template #body="slotProps" v-if="col.field === 'status'">
+            <Button class="p-button-success p-button-sm" :label="slotProps.data.status"
+              v-if="slotProps.data.status === 'FINISHED'">
             </Button>
-            <Button
-             class="p-button-secondary p-button-sm"
-             :label="slotProps.data.status"
-             v-else-if="slotProps.data.status === 'NOT_START'">
+            <Button class="p-button-secondary p-button-sm" :label="slotProps.data.status"
+              v-else-if="slotProps.data.status === 'NOT_START'">
             </Button>
-            <Button
-             class="p-button-warning p-button-sm"
-             :label="slotProps.data.status"
-             v-else-if="slotProps.data.status === 'RUNNING'">
+            <Button class="p-button-warning p-button-sm" :label="slotProps.data.status"
+              v-else-if="slotProps.data.status === 'RUNNING'">
             </Button>
-            <Button
-             class="p-button-danger p-button-sm"
-             :label="slotProps.data.status"
-             v-else-if="slotProps.data.status === 'FAILURE'">
+            <Button class="p-button-danger p-button-sm" :label="slotProps.data.status"
+              v-else-if="slotProps.data.status === 'FAILURE'">
             </Button>
-            <Button
-             class="p-button-info p-button-sm"
-             :label="slotProps.data.status"
-             v-else>
+            <Button class="p-button-info p-button-sm" :label="slotProps.data.status" v-else>
             </Button>
           </template>
           <template #body="slotProps" v-else-if="col.field === 'jenkins_id'">
-            <a
-              :href="'http://172.17.120.39:8080/job/ServicesFramework/job/post-silicon-validation/job/cloud_full_validation/' + slotProps.data.jenkins_id"
-              target="_blank"
-            >
+            <a :href="'http://172.17.120.39:8080/job/ServicesFramework/job/post-silicon-validation/job/cloud_full_validation/' + slotProps.data.jenkins_id"
+              target="_blank">
               {{slotProps.data.jenkins_id}}
             </a>
-        </template>
+          </template>
         </Column>
 
         <template #paginatorLeft>
-          <Button
-            type='button'
-            icon='pi pi-refresh'
-            class='p-button-text'
-            @click="refresh"
-          />
+          <Button type='button' icon='pi pi-refresh' class='p-button-text' @click="refresh" />
         </template>
         <template #paginatorRight>
           <Button type='button' icon='pi pi-cloud' class='p-button-text' />
         </template>
       </DataTable>
     </div>
-</div>
+  </div>
 </template>
 
 <script>
@@ -122,10 +93,15 @@ export default {
     InputText
     // Checkbox
   },
-  data () {
+  data() {
     return {
       errors: [],
-      filters: {},
+      filters: {
+        "global": {
+          "value":
+            ""
+        }
+      },
       loading: true,
       configs: [],
       workloads: [],
@@ -137,7 +113,7 @@ export default {
     }
   },
   methods: {
-    getConfigs () {
+    getConfigs() {
       this.showConfigs = true
       const endpoint = '/local/api/workload_system_config/'
       axios
@@ -169,7 +145,7 @@ export default {
           this.errors.push(e)
         })
     },
-    getWorkloads () {
+    getWorkloads() {
       const endpoint = '/local/api/workload/'
       axios
         .get(endpoint)
@@ -182,7 +158,7 @@ export default {
           this.errors.push(e)
         })
     },
-    getComponentParams () {
+    getComponentParams() {
       const endpoint = '/local/api/component_param/'
       axios
         .get(endpoint)
@@ -195,11 +171,11 @@ export default {
           this.errors.push(e)
         })
     },
-    refresh () {
+    refresh() {
       this.getConfigs()
     }
   },
-  created () {
+  created() {
     this.columns = [
       // { field: 'id', header: 'ID', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
       { field: 'workload_name', header: 'workload_name', style: "{'flex-grow':'1', 'flex-basis':'100px'}" },
@@ -218,7 +194,7 @@ export default {
 </script>
 
 <style scoped>
-  .p-button-sm {
-    width: 8em;
-  }
+.p-button-sm {
+  width: 8em;
+}
 </style>

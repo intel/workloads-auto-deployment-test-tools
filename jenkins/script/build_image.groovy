@@ -19,6 +19,7 @@ pipeline {
 		string(name: 'platform', defaultValue: 'ICX', description: '')
 		string(name: 'workload_list', defaultValue: '', description: 'To build workload list, default "" , means all workload. Separated with ";",e.g: BoringSSL;Bert-Large;CNN;customer/ali/redis')
 		string(name: 'repo', defaultValue: 'https://github.com/intel-innersource/applications.benchmarking.benchmark.external-platform-hero-features.git', description: 'WSF repo')
+		string(name: 'SUT', defaultValue: 'static', description: 'Only support static for now', trim: true)
 	}
 	environment {
 		ONESOURCE_REPO_1 = "github.com/HaitaoLi2Intel/applications.benchmarking.benchmark.platform-hero-features.git"
@@ -46,7 +47,7 @@ pipeline {
 			steps {
 				script {
 			    	sh (
-    					script: "cd validation &&  rm -rf build && mkdir build && cd build && echo accept | cmake -DPLATFORM=${platform} -DBENCHMARK='' -DREGISTRY=${registry} -DBACKEND=terraform -DRELEASE=${commitId} -DACCEPT_LICENSE=ALL ../",
+    					script: "cd validation &&  rm -rf build && mkdir build && cd build && echo accept | cmake -DPLATFORM=${platform} -DBENCHMARK='' -DREGISTRY=${registry} -DBACKEND=terraform -DRELEASE=${commitId} -DTERRAFORM_SUT=${env.SUT} -DACCEPT_LICENSE=ALL ../",
     					returnStdout: true
     					)
     				sh (script: "cd validation/build && make build_terraform", returnStdout: true)

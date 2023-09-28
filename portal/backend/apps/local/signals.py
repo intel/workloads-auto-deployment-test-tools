@@ -25,18 +25,16 @@ import re
 @receiver(post_save, sender=LocalJob)
 def trigger_machine_status_change(sender, instance, **kwargs):
 
-    if instance.status == "FINISHED" or re.search('FAIL', instance.status):
+    if instance.status == "IN_QUEUE":
         print(f'task for instance: [{instance.id}] under finished')
-        machines = LocalInstance.objects.filter(ip__in=instance.machines)
-        if instance.end_time > timezone.now():
+        # machine = LocalInstance.objects.filter(ip=instance.machines[0])
+        if instance.start_time > timezone.now():
             instance.status="TIME_PENDING"
             instance.save()
-        else:
-            for machine in machines:
-                if machine.status == "IN_USE":
-                    machine.status="FREE"
-                    machine.user = ""
-                    machine.save()
+        # else:
+        #     machine.status="FREE"
+        #     machine.user = ""
+        #     machine.save()
     # elif instance.status == "CREATING":
     #     log_path = f'workspace/cloud/logs/{instance.id}_change.log'
     #     if os.path.exists(log_path):

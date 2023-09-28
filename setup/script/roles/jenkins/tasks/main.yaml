@@ -1,0 +1,156 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+- name: ensure vault started
+  become: true
+  systemd: 
+    name: vault
+    state: started
+
+- name: Get VAULT_TOKEN
+  shell: |
+    . /etc/profile > /dev/null 2>&1 && echo -n $VAULT_TOKEN
+  register: vault_token
+
+- name: copy script files to /var/lib/script
+  become: true
+  synchronize:
+    src: "{{ playbook_dir }}/../../jenkins/script"
+    dest: "/var/lib/"
+
+- name: copy backend cert.pem file to /var/lib/script
+  become: true
+  synchronize:
+    src: "{{ playbook_dir }}/../cert/cert.pem"
+    dest: "/var/lib/script/cert.pem"
+
+# - name: copy version fixed plugins.txt to jenkins
+#   synchronize:
+#     src: "{{ playbook_dir }}/roles/jenkins/templates/plugins.txt"
+#     dest: "{{ playbook_dir }}/../../jenkins/"
+
+- name: Check java exists
+  shell: |
+    java --version
+  register: java_not_exists
+  ignore_errors: true
+
+- name: Install java
+  become: true
+  package:
+    name: "default-jdk"
+    state: present
+  when: java_not_exists.rc
+
+- name: Create jenkins configuration yaml
+  template:
+    src: jenkins-configuration.j2
+    dest: "{{ playbook_dir }}/../../jenkins/jenkins-configuration.yaml"
+
+- name: Check if self signed config added
+  shell: |
+    cat {{ playbook_dir }}/../../jenkins/docker-compose.yml | grep REGISTRY_HTTP_TLS_CERTIFICATE
+  register: add_self_signed
+  ignore_errors: true
+  
+- name: Create jenkins Dockerfile.jenkins
+  ansible.builtin.blockinfile:
+    path: "{{ playbook_dir }}/../../jenkins/Dockerfile.jenkins"
+    block: |
+      FROM jenkins/jenkins:2.417
+      ARG https_proxy
+      ARG http_proxy
+      ENV JAVA_OPTS -Djenkins.install.runSetupWizard=false
+      COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
+      RUN java $JAVA_OPTS -Dhttps.proxyHost={{ ProxyHost }} \
+          -Dhttps.proxyPort={{ ProxyPort }} \
+          -Dpermissive-script-security.enabled=false \
+          -jar /opt/jenkins-plugin-manager.jar --verbose --plugin-file /usr/share/jenkins/ref/plugins.txt
+      COPY ./script /usr/share/jenkins/script
+      COPY jenkins-configuration.yaml /usr/share/jenkins/ref/jenkins-configuration.yaml
+      ENV CASC_JENKINS_CONFIG /usr/share/jenkins/ref/jenkins-configuration.yaml
+    create: true
+
+- name: check jeknins image exists
+  shell: |
+    docker images| grep -E "jenkins-jenkins"
+  register: jeknins_image_not_exists
+  ignore_errors: true
+
+- name: Build jenkins (could also run 'docker compose build <build-arg> at jenkins directory')
+  shell: |
+    cd {{ playbook_dir }}/../../jenkins &&
+    docker compose build --build-arg http_proxy=$http_proxy --build-arg https_proxy=$https_proxy
+  when: jeknins_image_not_exists.rc
+
+- name: Start jenkins and jfrog
+  shell: |
+    cd {{ playbook_dir }}/../../jenkins &&
+    docker compose down && docker compose up -d
+
+- name: Get CRUMB
+  shell: |
+    CRUMB=$(curl http://{{ TWDTHost }}:8080/crumbIssuer/api/xml?xpath=concat\(//crumbRequestField,%22:%22,//crumb\) \
+    -c /tmp/cookies.txt \
+    --user 'admin:{{ TWDTJenkinsPassword }}' --insecure) && echo $CRUMB
+  register: crumb
+  until: ("Please wait while Jenkins is getting ready to work" not in crumb.stdout and crumb.rc == 0)
+  retries: 20
+  delay: 6
+
+- name: Get jenkins token
+  shell: |
+    curl -k --user admin:{{ TWDTJenkinsPassword }} -H "{{ crumb.stdout }}" \
+    --data-urlencode "script=$(cat {{ playbook_dir }}/roles/jenkins/templates/getTokens.groovy)" \
+    -b /tmp/cookies.txt  http://{{ TWDTHost }}:8080/scriptText | grep  my-vaas-token
+  register: my_vaas_token
+  ignore_errors: true
+
+- name: Create Jeknins token
+  shell: |
+    curl 'http://{{ TWDTHost }}:8080/user/admin/descriptorByName/jenkins.security.ApiTokenProperty/generateNewToken' \
+    --data 'newTokenName=my-vaas-token' \
+    -H "{{ crumb.stdout }}" \
+    --user 'admin:{{ TWDTJenkinsPassword }}' \
+    -b /tmp/cookies.txt \
+    --insecure
+  register: token_output
+  when: my_vaas_token.rc
+
+- name: Execute vault put command to store provision password
+  shell: |
+    . /etc/profile && timeout 1 vault operator unseal $VAULT_KEY1 && timout 1 vault operator unseal $VAULT_KEY2 && timeout 1 vault operator unseal $VAULT_KEY3
+    vault kv put -format=json kv/wsf-secret-password2 TWDTJenkinsToken="{{ token_json.data.tokenValue }}"
+  vars:
+    token_json: "{{ token_output.stdout | from_json }}"
+  when: my_vaas_token.rc
+  environment:
+    VAULT_ADDR: "http://{{ TWDTHost }}:8200"
+    
+- name: Create full_benchmark job
+  shell: |
+    curl -k --header "Content-Type: application/xml" --user admin:{{ TWDTJenkinsPassword }} -H "{{ crumb.stdout }}" \
+    --data-binary "@{{ playbook_dir }}/roles/jenkins/templates/full_benchmark.xml" \
+    -b /tmp/cookies.txt  http://{{ TWDTHost }}:8080/createItem?name=full_benchmark
+
+- name: Create build image job
+  shell: |
+    curl -k --header "Content-Type: application/xml" --user admin:{{ TWDTJenkinsPassword }} -H "{{ crumb.stdout }}" \
+    --data-binary "@{{ playbook_dir }}/roles/jenkins/templates/build_image.xml" \
+    -b /tmp/cookies.txt  http://{{ TWDTHost }}:8080/createItem?name=image
+
+- name: Create benchmark job
+  shell: |
+    curl -k --header "Content-Type: application/xml" --user admin:{{ TWDTJenkinsPassword }} -H "{{ crumb.stdout }}" \
+    --data-binary "@{{ playbook_dir }}/roles/jenkins/templates/single_benchmark.xml" \
+    -b /tmp/cookies.txt  http://{{ TWDTHost }}:8080/createItem?name=benchmark
+# # Jfrog config api need pro api, so need to do it manually
+- name: Check jfrog status, restart it if 8046 port not up
+  shell: |
+    docker exec jfrog bash -c "netstat -a|grep LISTEN|grep localhost:8046" || docker restart jfrog > /dev/null
+  register: jfrog_status
+  until: ("localhost:8046" in jfrog_status.stdout)
+  retries: 5 
+  delay: 60

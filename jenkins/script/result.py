@@ -5,14 +5,14 @@
 #
 import json
 import os
-import re
+import sys
 import requests, datetime
 import yaml
 from utils import sha256, execute_cmd, get_platforms
 import subprocess # nosec
 import pathlib
-import operator
 from urllib.parse import urlparse
+from sendmail import send_email
 
 class Execution(object):
     def __init__(self):
@@ -170,6 +170,7 @@ class Execution(object):
                                     'failed_test_case'].append(case_name)
                                 benchmark_execution_info['execution'][test_platform][workload]['Failed'] = \
                                     benchmark_execution_info['execution'][test_platform][workload]['Failed'] + 1
+                                failed_status = True
                             else:
                                 benchmark_execution_info['execution'][test_platform][workload][
                                     'passed_test_case'].append(
@@ -365,9 +366,10 @@ class Execution(object):
         :param store_url
         :return:
         '''
+        failed_status = False
         if ({'execution': {}} == benchmark_execution_info):
             print("Execution result is null...")
-            return 0
+            raise Exception("Execution result is null...")
 
         json_str = json.dumps(benchmark_execution_info, indent=4)
         execution_json_file = os.path.join(os.getenv("WORKSPACE",""), "%s_%s.json" % (platform, workload))
@@ -384,8 +386,9 @@ class Execution(object):
         dict_info_kpis_and_others, kpis_and_others = self.get_inner_key_from_dict(dict_info_workload, result_to_store['workload'])
         dict_info_kpis = dict_info_kpis_and_others['kpi']
 
-        portal_username = subprocess.run(['vault', 'kv', 'get', '-mount=kv', '-field=portalUserName', 'wsf-secret-password'], capture_output=True, text=True).stdout
-        portal_password = subprocess.run(['vault', 'kv', 'get', '-mount=kv', '-field=portalPassword', 'wsf-secret-password'], capture_output=True, text=True).stdout
+        portal_username = subprocess.run(['vault', 'kv', 'get', '-mount=kv', '-field=TWDTPortalUser', 'wsf-secret-password'], capture_output=True, text=True).stdout
+        portal_password = subprocess.run(['vault', 'kv', 'get', '-mount=kv', '-field=TWDTPortalPassword', 'wsf-secret-password'], capture_output=True, text=True).stdout
+        email_password = subprocess.run(['vault', 'kv', 'get', '-mount=kv', '-field=TWDTEmailSenderPassword', 'wsf-secret-password'], capture_output=True, text=True).stdout
         if ({} == dict_info_kpis):
             for case in dict_info_kpis_and_others['all_test_case']:
                 result_to_store_temp = result_to_store
@@ -399,12 +402,13 @@ class Execution(object):
                 result_to_store_temp['created'] = timestamp
                 result_to_store_temp['modified'] = timestamp
                 try:
-                    response = requests.post(store_url, data=json.dumps(result_to_store_temp), verify="/home/cert.pem", headers={'Content-Type': 'application/json'}, auth=(portal_username, portal_password))
+                    response = requests.post(store_url, data=json.dumps(result_to_store_temp), verify="script/jenkins/script/cert.pem", headers={'Content-Type': 'application/json'}, auth=(portal_username, portal_password))
                     print(response.json())
                     print("Test result uploaded")
                 except Exception as e:
                     print("An exception occurs...")
                     print(e)
+                failed_status = True
         else:
             for kpi in dict_info_kpis:
                 result_to_store_temp = result_to_store
@@ -413,10 +417,15 @@ class Execution(object):
                     result_to_store_temp['kpi_key'] = '-'
                     result_to_store_temp['kpi_value'] = '-'
                     result_to_store_temp['test_result'] = 'FAILED'
+                    failed_status = True
                 else:
                     result_to_store_temp['kpi_key'] = list(dict_info_kpis[kpi]['metrics'].keys())[0]
                     result_to_store_temp['kpi_value'] = dict_info_kpis[kpi]['metrics'][result_to_store_temp['kpi_key']]
                     result_to_store_temp['test_result'] = 'PASS'
+                result_to_store_temp['log_url'] = dict_info_kpis_and_others["log_url"]
+                art_url = os.getenv("artifactory_url","")
+                art_host = urlparse(art_url).netloc
+                result_to_store_temp['jenkins_job_id'] = "http://" + art_host.split("8082")[0] + "8080/job/benchmark/" + os.getenv("BUILD_ID","")
                 result_to_store_temp['test_time'] = dict_info_kpis[kpi]['test_time']
                 # result_to_store_temp['cumulus_uri'] = dict_info_kpis[kpi]['cumulus_url']
                 timestamp = datetime.datetime.now().strftime("%Y/%m/%d, %H:%M:%S") 
@@ -425,11 +434,39 @@ class Execution(object):
                 result_to_store_temp['created'] = timestamp
                 result_to_store_temp['modified'] = timestamp
                 try:
-                    response = requests.post(store_url, data=json.dumps(result_to_store_temp), verify="/home/cert.pem", headers={'Content-Type': 'application/json'}, auth=(portal_username, portal_password))
+                    response = requests.post(store_url, data=json.dumps(result_to_store_temp), verify="script/jenkins/script/cert.pem", headers={'Content-Type': 'application/json'}, auth=(portal_username, portal_password))
                     print(response.json())
                 except Exception as e:
                     print("An exception occurs...")
                     print(e)
+
+                content = {"data":f"Jenkins url: {result_to_store_temp['jenkins_job_id']} Artifactory url: {result_to_store_temp['log_url']}"}
+                provision_log_url = store_url.replace("test_result/",f"provision_log/?job_id={result_to_store_temp['job_id']}")
+                try:
+                    requests.post(provision_log_url, json=content, verify="script/jenkins/script/cert.pem", headers={'Content-Type': 'application/json'}, auth=(portal_username, portal_password))
+                except Exception as e:
+                    print("An exception occurs...")
+                    print(e)
+
+                config_url = store_url.replace("test_result/",f"get_config_json/?json_file={result_to_store_temp['job_id']}_config.json")
+                try:
+                    response = requests.get(config_url, verify="script/jenkins/script/cert.pem", auth=(portal_username, portal_password))
+                    sender = response.json()["sender"]
+                    receivers = response.json()["receivers"].split(",")
+                    smtp, port = response.json()["smtp"].split(":")
+                    content = f"<html><body><p>Jenkins url: <br/>{result_to_store_temp['jenkins_job_id']}<br/>Artifactory url: <br/>{result_to_store_temp['log_url']}<br/></p></body></html>"
+                    subject = f"{result_to_store_temp['workload']} test result update"
+                    if "xxx" not in sender:
+                        send_email(sender, receivers, smtp, port, email_password, content, subject)
+                        content = {"data": f"Send email from {sender}  to {';'.join(receivers)}"}
+                        requests.post(provision_log_url, json=content, verify="script/jenkins/script/cert.pem", headers={'Content-Type': 'application/json'}, auth=(portal_username, portal_password))
+                    # print(sender, receivers,smtp, port, email_password, content)
+                except Exception as e:
+                    print("An exception occurs...")
+                    print(e)
+        if failed_status:
+            raise Exception("Not all result passed! This cause the jenkins job failed.")
+                
 
     def get_inner_key_from_dict(self, outterDict, outterDictKey):
         innerDict = outterDict[outterDictKey]
@@ -437,3 +474,11 @@ class Execution(object):
         if (len(innerDictKeyList) > 1):
             return innerDict, innerDictKeyList
         return innerDict, innerDictKeyList[0]
+
+if __name__ == "__main__":
+    print(sys.argv)
+    session, platform, workload, final_config = sys.argv[1: 5]
+    front_job_id, platform, workload, store_url = sys.argv[5: 9]
+    benchmark_execution = Execution()
+    benchmark_execution_info = benchmark_execution.generate_benchmark_execution_info(session, platform, workload, final_config)
+    benchmark_execution.store_benchmark_execution_info(benchmark_execution_info, front_job_id, platform, workload, store_url)

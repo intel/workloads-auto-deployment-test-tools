@@ -14,7 +14,7 @@ SPDX-License-Identifier: Apache-2.0
         <el-form label-position="right" label-width="80px" :model="formData">
           <div class="p-formgroup-inline">
             <div class="p-field p-col-6">
-              <h5>Software Package Args</h5>
+              <h5>Software Package Args(Optional)</h5>
               <el-switch
               v-model="software_package_args"
               active-color="#13ce66"

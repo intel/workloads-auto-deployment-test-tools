@@ -1,0 +1,421 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@1346.v180a_63f40267">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2144.v077a_d1928a_40"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2144.v077a_d1928a_40">
+      <jobProperties>
+        <string>jenkins.model.BuildDiscarderProperty</string>
+      </jobProperties>
+      <triggers/>
+      <parameters>
+        <string>baremetal</string>
+        <string>session</string>
+        <string>repo</string>
+        <string>tdx</string>
+        <string>run_on_previous_hw</string>
+        <string>platform</string>
+        <string>timeout</string>
+        <string>artifactory_url</string>
+        <string>workload_test_config_yaml</string>
+        <string>limited_node_number</string>
+        <string>workload_params</string>
+        <string>exclude_case</string>
+        <string>registry</string>
+        <string>controller_ip</string>
+        <string>cumulus_tags</string>
+        <string>parallel_run_case_number</string>
+        <string>emon</string>
+        <string>workload</string>
+        <string>run_on_specific_hw</string>
+        <string>cluster_file</string>
+        <string>pull_request_id</string>
+        <string>worker_ip_list</string>
+        <string>k8s_reset</string>
+        <string>front_job_id</string>
+        <string>ctest_option</string>
+        <string>django_execution_result_url</string>
+        <string>vm</string>
+        <string>snc4</string>
+        <string>filter_case</string>
+        <string>instance_api</string>
+        <string>commit_id</string>
+        <string>customer</string>
+      </parameters>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>60</daysToKeep>
+        <numToKeep>2000</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+    <com.sonyericsson.jenkins.plugins.bfa.model.ScannerJobProperty plugin="build-failure-analyzer@2.4.1">
+      <doNotScan>false</doNotScan>
+    </com.sonyericsson.jenkins.plugins.bfa.model.ScannerJobProperty>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>front_job_id</name>
+          <description>Related Job in frontend.</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>workload</name>
+          <defaultValue>Kafka</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>platform</name>
+          <defaultValue>ICX</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>session</name>
+          <description>session id for full validation, combination with &quot;date&quot;_&quot;full validation job id&quot;_&quot;wiki commit&quot;_&quot;cumulus commit&quot;_&quot;repo commit&quot;, for manual run, use &quot;repo commit&quot; is enough</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>repo</name>
+          <description>github repo address</description>
+          <defaultValue>https://github.com/intel-innersource/applications.benchmarking.benchmark.external-platform-hero-features.git</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>registry</name>
+          <description>docker registry</description>
+          <defaultValue>127.0.0.1:5000</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>instance_api</name>
+          <description>get instance list api</description>
+          <defaultValue>https://127.0.0.1:8899/local/api/instance/</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>artifactory_url</name>
+          <description>artifactory url</description>
+          <defaultValue>http://127.0.0.1:8082/artifactory</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>django_execution_result_url</name>
+          <description>store execution results</description>
+          <defaultValue>https://127.0.0.1:8899/local/api/test_result/</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>commit_id</name>
+          <description>commit id of the provided repo, also could be branch name</description>
+          <defaultValue>main</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>emon</name>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>timeout</name>
+          <description>timeout for execution, first one is for pod execution timeout, second one is for pod ready timeout.</description>
+          <defaultValue>60000,3600</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>vm</name>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>baremetal</name>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>tdx</name>
+          <description>Currently only for SPR platform</description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>snc4</name>
+          <description>Currently only for SPR platform</description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>cumulus_tags</name>
+          <description>use to tag cumulus run especially for release run. different tags are separated with comma. e.g: tag1,tag2</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>run_on_specific_hw</name>
+          <description>hw config id from cluster.yaml, if defined, all test case will run on this config.</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>run_on_previous_hw</name>
+          <description>Run on the same HW configuration with previous.</description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>filter_case</name>
+          <description>Regex string for ctest, if set, only run the cases which match this string. If start with !, then these cases will not run.</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>exclude_case</name>
+          <description>if set, exclude the cases which match this string. These cases will not run..</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>pull_request_id</name>
+          <description>used for gated test</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>workload_params</name>
+          <description>workload exposed params key-value pair. e.g: param1=value1 param2=value2</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>workload_test_config_yaml</name>
+          <description>low end or high end configuration file from workload folder, will ignore workload_params</description>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>customer</name>
+          <description>main stands for mainline workloads direct under workload folder not customer workloads</description>
+          <choices class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>main</string>
+              <string>tencent</string>
+              <string>ali</string>
+            </a>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>cluster_file</name>
+          <description>To use different cluster.yaml file in artifactory</description>
+          <defaultValue>cluster.yaml</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>limited_node_number</name>
+          <description>Limit some cases execute if their required nodes are greater than the specified value, and mark them as no_run.</description>
+          <defaultValue>4</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>parallel_run_case_number</name>
+          <description>Specifies the number of cases to run in parallel during the workload validation.</description>
+          <defaultValue>1</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>controller_ip</name>
+          <description>controller ip</description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>worker_ip_list</name>
+          <description>worker ips, join with &apos;,&apos; </description>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>k8s_reset</name>
+          <description>Reset k8s cluster, be cautious to enable it as it will only setup k8s with selected nodes.</description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>ctest_option</name>
+          <description>ctest.sh options like --loop to run the ctest commands sequentially.</description>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@3787.v8f5dcd14a_fa_c">
+    <script>/*
+Apache v2 license
+Copyright (C) 2023 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+*/
+
+def build_time = new Date()
+build_time = build_time.format(&apos;MM-dd-yyyy&apos;, TimeZone.getTimeZone(&apos;UTC&apos;))
+def revision
+def target
+
+pipeline {
+    options {
+        buildDiscarder(logRotator(daysToKeepStr: &apos;60&apos;, numToKeepStr: &apos;2000&apos;))
+    }
+    agent {
+        label &apos;node1&apos;
+    }
+    parameters {
+        string(name: &apos;front_job_id&apos;, defaultValue: &apos;&apos;, description: &apos;Related Job in frontend.&apos;)
+        string(name: &apos;workload&apos;, defaultValue: &apos;Kafka&apos;, description: &apos;&apos;)
+        string(name: &apos;platform&apos;, defaultValue: &apos;ICX&apos;, description: &apos;&apos;)
+        string(name: &apos;session&apos;, defaultValue: &apos;&apos;, description: &apos;session id for full validation, combination with &quot;date&quot;_&quot;full validation job id&quot;_&quot;wiki commit&quot;_&quot;cumulus commit&quot;_&quot;repo commit&quot;, for manual run, use &quot;repo commit&quot; is enough&apos;)
+        string(name: &apos;repo&apos;, defaultValue: &apos;https://github.com/intel-innersource/applications.benchmarking.benchmark.external-platform-hero-features.git&apos;, description: &apos;github repo address&apos;)
+        string(name: &apos;registry&apos;, defaultValue: &apos;127.0.0.1:5000&apos;, description: &apos;docker registry&apos;)
+        string(name: &apos;instance_api&apos;, defaultValue: &apos;https://127.0.0.1:8899/local/api/instance/&apos;, description: &apos;get instance list api&apos;)
+        string(name: &apos;artifactory_url&apos;, defaultValue: &apos;http://127.0.0.1:8082/artifactory&apos;, description: &apos;artifactory url&apos;)
+        string(name: &apos;django_execution_result_url&apos;, defaultValue: &apos;https://127.0.0.1:8899/local/api/test_result/&apos;, description: &apos;store execution results&apos;)
+        string(name: &apos;commit_id&apos;, defaultValue: &apos;main&apos;, description: &apos;commit id of the provided repo, also could be branch name&apos;)
+        booleanParam(name: &apos;emon&apos;, defaultValue: &apos;&apos;, description: &apos;&apos;)
+        string(name: &apos;timeout&apos;, defaultValue: &apos;60000,3600&apos;, description: &apos;timeout for execution, first one is for pod execution timeout, second one is for pod ready timeout.&apos;)
+        booleanParam(name: &apos;vm&apos;, defaultValue: &apos;&apos;, description: &apos;&apos;)
+        booleanParam(name: &apos;baremetal&apos;, defaultValue: true, description: &apos;&apos;)
+        booleanParam(name: &apos;tdx&apos;, defaultValue: &apos;&apos;, description: &apos;Currently only for SPR platform&apos;)
+        booleanParam(name: &apos;snc4&apos;, defaultValue: &apos;&apos;, description: &apos;Currently only for SPR platform&apos;)
+        string(name: &apos;cumulus_tags&apos;, defaultValue: &apos;&apos;, description: &apos;use to tag cumulus run especially for release run. different tags are separated with comma. e.g: tag1,tag2&apos;)
+        string(name: &apos;run_on_specific_hw&apos;, defaultValue: &apos;&apos;, description: &apos;hw config id from cluster.yaml, if defined, all test case will run on this config.&apos;)
+        booleanParam(name: &apos;run_on_previous_hw&apos;, defaultValue: true, description: &apos;Run on the same HW configuration with previous.&apos;)
+        string(name: &apos;filter_case&apos;, defaultValue: &apos;&apos;, description: &apos;Regex string for ctest, if set, only run the cases which match this string. If start with !, then these cases will not run.&apos;)
+        string(name: &apos;exclude_case&apos;, defaultValue: &apos;&apos;, description: &apos;if set, exclude the cases which match this string. These cases will not run..&apos;)
+        string(name: &apos;pull_request_id&apos;, defaultValue: &apos;&apos;, description: &apos;used for gated test&apos;)
+        string(name: &apos;workload_params&apos;, defaultValue: &apos;&apos;, description: &apos;workload exposed params key-value pair. e.g: param1=value1 param2=value2&apos;)
+        string(name: &apos;workload_test_config_yaml&apos;, defaultValue: &apos;&apos;, description: &apos;low end or high end configuration file from workload folder, will ignore workload_params&apos;, trim: true)
+        choice(name: &apos;customer&apos;, choices: [&apos;main&apos;, &apos;tencent&apos;, &apos;ali&apos;], description: &apos;main stands for mainline workloads direct under workload folder not customer workloads&apos;)
+        string(name: &apos;cluster_file&apos;, defaultValue: &apos;cluster.yaml&apos;, description: &apos;To use different cluster.yaml file in artifactory&apos;)
+        string(name: &apos;limited_node_number&apos;, defaultValue: &apos;4&apos;, description: &apos;Limit some cases execute if their required nodes are greater than the specified value, and mark them as no_run.&apos;)
+        string(name: &apos;parallel_run_case_number&apos;, defaultValue: &apos;1&apos;, description: &apos;Specifies the number of cases to run in parallel during the workload validation.&apos;)
+        string(name: &apos;controller_ip&apos;, defaultValue: &apos;&apos;, description: &apos;controller ip&apos;)
+        string(name: &apos;worker_ip_list&apos;, defaultValue: &apos;&apos;, description: &apos;worker ips, join with \&apos;,\&apos; &apos;)
+        booleanParam(name: &apos;k8s_reset&apos;, defaultValue: false, description: &apos;Reset k8s cluster, be cautious to enable it as it will only setup k8s with selected nodes.&apos;)
+        string(name: &apos;ctest_option&apos;, defaultValue: &apos;&apos;, description: &apos;ctest.sh options like --loop to run the ctest commands sequentially.&apos;, trim: true)
+    }
+    environment {
+        JENKINS_SCRIPT_REPO = &apos;https://github.com/intel-sandbox/WSF-VaaS.git&apos;
+    }
+    stages {
+        stage(&apos;Check WorkSpace clean&apos;){
+            steps {
+                script{
+                    out_code=sh(script:&quot;ls ${workspace}/validation&quot;,returnStatus:true)
+                    if(out_code == 0){
+                        println &quot;**************************************&quot;
+                        println &quot;|       WorkSpace not clean ...      |&quot;
+                        println &quot;**************************************&quot;
+                        sh &quot;rm -rf ${workspace}/run_uri&quot;
+                        sh &quot;rm -rf ${workspace}/*.json&quot;
+                        sh &quot;rm -rf ${workspace}/logs&quot;
+                        sh &quot;rm -rf ${workspace}/result&quot;
+                        sh &quot;rm -rf ${workspace}/pool&quot;
+                        sh &quot;rm -rf ${workspace}/dist&quot;
+                    }
+                }
+            }
+        }
+
+        stage(&apos;Prepare&apos;) {
+            steps {
+                script {
+                    sh &quot;mkdir -p pool&quot;
+                    // Download wsf repo
+                    sh &quot;rm -rf validation &amp;&amp; git clone ${env.repo} validation &amp;&amp; cd validation &amp;&amp; git checkout ${env.commit_id}&quot;
+                    // Copy jenkins script
+                    sh &quot;mkdir -p $WORKSPACE/script/jenkins&quot;
+                    sh &quot;cp -r /var/lib/script/ $WORKSPACE/script/jenkins&quot;
+                    // sh &quot;rm -rf script &amp;&amp; git clone ${JENKINS_SCRIPT_REPO} script &amp;&amp; cd script &amp;&amp; git checkout external_release&quot;
+                    if (env.session != null &amp;&amp; !env.session.isEmpty()) {
+                        env.build_session = env.session
+                        revision = session.split(&apos;_&apos;)[-1]
+                        display_name = &quot;${session}_${platform}_${workload}_${BUILD_ID}&quot;
+                    }
+                    else
+                    {
+                        revision = &apos;master&apos;
+                        display_name = &quot;manual_${build_time}_${platform}_${workload}_${BUILD_ID}&quot;
+                        env.build_session = &quot;manual_${build_time}_${BUILD_ID}_master&quot;
+                    }
+                    if (env.vm == true) {
+                        currentBuild.displayName = &quot;${display_name}_VM&quot;
+                        env.platform_name = &quot;${platform}-VM&quot;Q
+                    }
+                    else
+                    {
+                        currentBuild.displayName = &quot;${display_name}&quot;
+                        env.platform_name = platform
+                    }
+                    // sh &quot;rm -rf validation &amp;&amp; git clone ${env.repo} validation &amp;&amp; cd validation &amp;&amp; git checkout ${env.commit_id}&quot;
+                    sh &quot;python3 script/jenkins/script/cluster_generate.py ${controller_ip} ${worker_ip_list} ${platform} ${instance_api} ${registry}&quot;
+                }
+            }
+        }
+        stage(&apos;Run workload benchmark&apos;) {
+            steps {
+                script {
+                    //sh &quot;${workspace}/script/jenkins/script/benchmark $build_session benchmark || echo \$? &gt; status&quot;
+                    benchmark_status=sh(script:&quot;${workspace}/script/jenkins/script/benchmark $build_session benchmark&quot;, returnStatus:true)
+                    sh(script:&quot;echo ${benchmark_status} &gt; status&quot;)
+                }
+            }
+        }
+    }
+    post {
+        always {
+            script {
+                // println env.BUILD_URL
+                def benchmark_status = readFile(file: &apos;status&apos;).trim()
+                println &quot;benchmark_status: $benchmark_status&quot;
+                if (benchmark_status != &quot;0&quot;) {
+                    echo &quot;Fatal error: benchmark failed.&quot;
+                    currentBuild.result = &apos;FAILURE&apos;
+                }
+                println &quot;Create and publish artifacts.&quot;
+                benchmark_result = sh (script:&quot;. /etc/profile &gt; /dev/null 2&gt;&amp;1 &amp;&amp; ${workspace}/script/jenkins/script/benchmark $build_session artifacts&quot;, returnStatus:true)
+                def art_url=&quot;${artifactory_url}&quot;
+                out = sh (script:&quot;ls ${workspace}/validation/build/workload/${workload}/Testing/Temporary&quot;, returnStatus:true)
+                if (out == 0) {
+                    def server = Artifactory.newServer url: art_url, credentialsId: &apos;jfrog&apos;
+                        def uploadSpec = &quot;&quot;&quot;{
+                        &quot;files&quot;: [
+                        {
+                        &quot;pattern&quot;: &quot;logs/&quot;,
+                        &quot;target&quot;: &quot;auto_provision/${build_session}/${platform_name}_${workload}_${BUILD_ID}/&quot;,
+                        &quot;props&quot;: &quot;retention.days=365&quot;,
+                        &quot;recursive&quot;: &quot;true&quot;,
+                        &quot;flat&quot;: &quot;false&quot;
+                        },
+                        {
+                        &quot;pattern&quot;: &quot;*${workload}.json&quot;,
+                        &quot;target&quot;: &quot;auto_provision/${build_session}/execution/${platform_name}_${workload}_${BUILD_ID}.json&quot;,
+                        &quot;props&quot;: &quot;retention.days=365&quot;,
+                        &quot;recursive&quot;: &quot;true&quot;,
+                        &quot;flat&quot;: &quot;false&quot;
+                        }
+                        ]
+                        }&quot;&quot;&quot;
+                        server.bypassProxy = true
+                        server.upload spec: uploadSpec
+                }
+                script {
+                    if(fileExists(&quot;${workspace}/run_uri&quot;)){
+                        runs = sh (script:&quot;cat ${workspace}/run_uri&quot;, returnStdout:true)
+                        runs = runs.split(&apos;\n&apos;)
+                        for (run in runs) {
+                            sh &quot;docker kill ${run} || echo 0&quot;
+                        }
+                    }
+                }
+                cleanWs()
+                if (benchmark_result != 0) {
+                    echo &quot;Fatal error: result failed.&quot;
+                    currentBuild.result = &apos;FAILURE&apos;
+                }
+            }
+        }
+    }
+}
+
+</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

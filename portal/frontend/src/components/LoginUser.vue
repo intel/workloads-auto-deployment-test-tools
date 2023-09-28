@@ -6,10 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 <template>
   <div>
     <span class="user">{{ loginUser }} / </span>
-    <a
-      class="mr-4 btn btn-primary btn-sm"
-      href="/accounts/logout/"
-    >
+    <a class="mr-4 btn btn-primary btn-sm logout-button" href="/accounts/logout/">
       Logout
     </a>
   </div>
@@ -20,14 +17,14 @@ import axios from 'axios'
 
 export default {
   name: 'LoginUserComponent',
-  data () {
+  data() {
     return {
       loginUser: null,
       errors: []
     }
   },
   methods: {
-    getLoginUser () {
+    getLoginUser() {
       const endpoint = '/users/api/user/'
       axios
         .get(endpoint)
@@ -39,22 +36,8 @@ export default {
         })
     }
   },
-  created () {
+  created() {
     this.getLoginUser()
   }
 }
 </script>
-
-<style scoped>
-  .user {
-      display: inline-block;
-      padding: .35em .65em;
-      font-size: .75em;
-      font-weight: 700;
-      line-height: 1;
-      text-align: center;
-      white-space: nowrap;
-      vertical-align: baseline;
-      border-radius: .25rem;
-  }
-</style>

@@ -24,7 +24,6 @@ class LocalInstance(models.Model):
     ]
     hostname = models.CharField(max_length=50, null=True, blank=True)
     username = models.CharField(max_length=30, null=True, blank=True)
-    password = models.CharField(max_length=30, null=True, blank=True)
     ip = models.CharField(max_length=30, null=True, blank=True)
     ssh_port = models.PositiveIntegerField(null=True, blank=True, default=22)
     internal_ip = models.CharField(max_length=30, null=True, blank=True)
@@ -42,6 +41,7 @@ class LocalInstance(models.Model):
     platform = models.CharField(max_length=30, null=True, blank=True)
     user = models.CharField(max_length=30, null=True, blank=True)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES,default='FREE', null=True, blank=True)
+    occupant_job = models.CharField(max_length=30, null=True, blank=True)
     labels = ArrayField(models.CharField(max_length=128),
                         default=list, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -94,7 +94,7 @@ class LocalJob(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     fail_reason = models.CharField(max_length=512, null=True, blank=True)
-    provision_id = models.CharField(max_length=10, null=True, blank=True)
+    provision_id = models.CharField(max_length=128, null=True, blank=True)
     user = models.CharField(max_length=30, null=True, blank=True)
     status = models.CharField(max_length=30, default='IN_QUEUE', null=True, blank=True)
     start_time = models.DateTimeField(null=True, blank=True)
@@ -134,7 +134,7 @@ class LocalJobTestResult(models.Model):
     log_url = models.CharField(max_length=512, null=True, blank=True)
     cumulus_uri = models.CharField(max_length=512, null=True, blank=True)
     tag = models.CharField(max_length=512, choices=TAG_CHOICES, null=True, blank=True)
-    jenkins_job_id = models.CharField(max_length=30, null=True, blank=True)
+    jenkins_job_id = models.CharField(max_length=128, null=True, blank=True)
     job_id = models.CharField(max_length=30, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
@@ -145,7 +145,7 @@ class LocalJobTestResult(models.Model):
         return f'{self.id}'
 
     class Meta:
-        ordering = ['id']
+        ordering = ['-id']
 
 class Workload(models.Model):
     name = models.CharField(max_length=128, null=True, blank=True)

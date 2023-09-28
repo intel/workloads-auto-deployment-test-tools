@@ -60,7 +60,7 @@ if __name__ == '__main__':
     workers_info = []
 
     response = requests.get(
-        url=get_instance_api, verify="/home/cert.pem")
+        url=get_instance_api, verify="script/jenkins/script/cert.pem")
     machines = response.json()
     for machine in machines:
         # print(machine)

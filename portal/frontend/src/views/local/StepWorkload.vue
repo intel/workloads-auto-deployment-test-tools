@@ -154,6 +154,9 @@ export default {
               if (conf.value !== null) {
                 this.formData.selectedRegistry = { value: conf.value }
               }
+              if (this.formData.Registry.length !== 0) {
+                this.formData.selectedRegistry = this.formData.Registry[0]
+              }
             }
             if (conf.parameter === 'deployMode') {
               if (conf.value !== null) {

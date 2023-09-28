@@ -1,0 +1,48 @@
+// divide
+$margin-top: 16px;
+$margin-bottom: 16px;
+$margin-left: 12px;
+$margin-right: 12px;
+
+// color
+$color-theme-blue-a: rgb(0, 120, 212);  //
+$color-theme-blue-b: rgb(0, 113, 197);  // #0070c5
+$color-dark-blue: rgb(0, 60, 113);  // #003c71
+$color-bright-blue: rgb(0, 199, 253); // #00c7fd
+$color-text-black: rgb(38, 38, 38); // #262626
+
+// font
+$font-family-default: IntelOneText;
+// $font-family-title: IntelOneDisplayAR;
+$font-family-title: IntelClear;
+$font-family-body-title: IntelClearPro;
+$font-size-user: 17px;
+$font-size-logout: 17px;
+.font {
+  font-family: $font-family-title !important;
+}
+
+// main-content
+.main-content {
+  // height: 100vh;
+  margin-right: 20px;
+  margin-bottom: $margin-bottom;
+  margin-left: 20px;
+  border-radius: 0em !important;
+  border-width: 0px !important;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 20px 30px;
+}
+
+// popup
+.popup {
+  width: 90% !important;
+  max-height: 96% !important;
+}
+
+// form
+.formCard {
+  width: 100%;
+}
+.inputSwitch {
+  margin-bottom: 1rem;
+}

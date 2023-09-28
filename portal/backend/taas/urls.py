@@ -32,7 +32,7 @@ from core.views import IndexTemplateView
 
 schema_view = get_schema_view(
    openapi.Info(
-      title="WiE TaaS API",
+      title="Intel® TWDT API",
       default_version='v1',
    ),
    public=True,

@@ -1,0 +1,98 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+- name: Check docker installed
+  shell: 
+    cmd: "docker ps {{ compose | default(false) | bool | ternary('&& docker compose version','') }}"
+    executable: /bin/bash
+  register: docker
+  ignore_errors: true
+
+- name: check OS
+  shell:
+    cmd: ". /etc/os-release; echo $ID"
+    executable: /bin/bash
+  register: os
+
+- block:
+    - name: install docker
+      include_tasks:
+        file: "install-{{ (os.stdout == 'rhel' or os.stdout == 'anolis') | ternary('centos', os.stdout) }}.yaml"
+      when: docker.rc != 0
+
+    - name: Ensure group "docker" exists
+      group:
+        name: docker
+        state: present
+
+    - name: add user to the docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: [ docker ]
+        append: yes
+  become: true
+
+- name: Check daemon.json
+  stat:
+    path: "{{ docker_daemon_json_path }}"
+  register: daemon_json_exists
+
+- name: Create daemon.json data
+  set_fact:
+    daemon_json_data: '{"insecure-registries":["{{ docker_registry_host }}:5000"]}'
+  when: not daemon_json_exists.stat.exists
+
+- name: Get daemon.json data
+  set_fact:
+    daemon_json_data: "{{ lookup('file', docker_daemon_json_path) | from_json }}"
+  when: daemon_json_exists.stat.exists
+
+- name: Check registry included in daemon.json
+  shell: |
+    cat {{ docker_daemon_json_path }} | grep {{ docker_registry_host }}:5000 -q
+  register: insecure_updated
+  when: daemon_json_exists.stat.exists
+  ignore_errors: true
+
+- name: Update daemon.json
+  set_fact:
+    daemon_json_data: "{{ daemon_json_data | combine(item, list_merge='prepend') }}"
+  loop:
+    - { "insecure-registries": ["{{ docker_registry_host }}:5000"] }
+  when: daemon_json_exists.stat.exists and insecure_updated.rc
+
+- name: Write daemon_json_data to original file
+  become: true
+  copy:
+    content: "{{ daemon_json_data | to_nice_json }}"
+    dest: "{{ docker_daemon_json_path }}"
+  when: not daemon_json_exists.stat.exists
+
+- name: Write daemon_json_data to original file
+  become: true
+  copy:
+    content: "{{ daemon_json_data | to_nice_json }}"
+    dest: "{{ docker_daemon_json_path }}"
+  when: daemon_json_exists.stat.exists and insecure_updated.rc
+
+- name: check docker proxy setting file exists
+  stat:
+    path: "/etc/systemd/system/docker.service.d/https-proxy.conf"
+  register: proxy_file
+
+- name: write docker proxy setting file
+  become: true
+  shell: |
+    mkdir -p /etc/systemd/system/docker.service.d
+    echo "[Service]\nEnvironment=HTTP_PROXY={{ http_proxy }} HTTPS_PROXY={{ https_proxy }} NO_PROXY={{ no_proxy }}" > /etc/systemd/system/docker.service.d/https-proxy.conf
+  when: https_proxy and not proxy_file.stat.exists
+
+- name: Restart docker
+  become: true
+  systemd: 
+    name: docker
+    state: restarted
+    daemon_reload: true
+  when: not daemon_json_exists.stat.exists or insecure_updated.rc or ( https_proxy and not proxy_file.stat.exists )

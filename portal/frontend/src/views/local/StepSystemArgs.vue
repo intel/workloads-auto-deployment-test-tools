@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
   <div class="p-field p-col-9 p-md-9 text-align-left">
     <el-card class="box-card" v-bind:style="{'height': height +'px'}">
       <div slot="header" class="clearfix">
-        <span>System Args</span>
+        <span>System Args(Optional)</span>
       </div>
       <div>
         <el-form label-position="right" label-width="80px" :model="formData">

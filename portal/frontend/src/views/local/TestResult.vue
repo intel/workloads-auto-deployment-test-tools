@@ -48,6 +48,20 @@ SPDX-License-Identifier: Apache-2.0
             <span>{{ data.kpi_value }}</span>
           </template>
         </Column>
+        <Column field="log_url" header="Log Url">
+          <template #body="{ data }">
+            <span>
+            <a :href="data.log_url" v-text="data.log_url" target="_blank"></a>
+            </span>
+          </template>
+        </Column>
+        <Column field="jenkins_job_id" header="Jenkins Job ID">
+          <template #body="{ data }">
+            <span>
+            <a :href="data.jenkins_job_id" v-text="data.jenkins_job_id" target="_blank"></a>
+            </span>
+          </template>
+        </Column>
         <Column field="test_time" header="Duration">
           <template #body="{ data }">
             <span>{{ data.test_time }}</span>
@@ -86,6 +100,8 @@ export default {
   },
   methods: {
     getTestResult () {
+      const hostip = location.host.split(":")[0]
+      const ipPattern = /\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g;
       const endpoint = `/local/api/test_result/?job_id=${this.JobId}`
       const config = { 'Cache-Control': 'no-store' }
       axios
@@ -97,6 +113,9 @@ export default {
             for (var key in element) {
               if (element[key] === null || element[key] === '') {
                 element[key] = '-'
+              }
+              if (key == "log_url" || key == "jenkins_job_id") { 
+                element[key] = element[key].replaceAll(new RegExp(ipPattern, "g"), hostip)
               }
             }
             if (element.test_result == 'PASS') {

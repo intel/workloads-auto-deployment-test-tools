@@ -1,0 +1,47 @@
+// Navbar.vue
+$height-nav: 4.5rem;
+$font-family-nav: IntelClear;
+.font-menu {
+  width: 100%;
+  font-family: $font-family-nav;
+  height: $height-nav;
+  padding-right: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 0 !important;
+  padding-top: 0 !important;
+  border: 0 !important;
+  // background-color: #FBFBFB !important;
+  border-radius: 0 !important;
+  box-shadow: 0px 15px 20px rgba(0, 0, 0, 0.1) !important;
+  margin-bottom: $margin-bottom;
+}
+.p-menuitem-text {
+  color: $color-theme-blue-a !important;
+  &:hover {
+    color: $color-dark-blue !important;
+  }
+}
+.p-submenu-icon {
+  color: $color-theme-blue-a !important;
+  &:hover {
+    color: $color-dark-blue !important;
+  }
+}
+.logo-image {
+  height: 4.5rem;
+  border-top: 0;
+  border-bottom: 0;
+  padding-right: 1px solid white;
+  cursor: pointer;
+  box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
+  &:hover {
+    // box-shadow: 0px 15px 20px rgba(0, 60, 113, 0.4);
+    box-shadow: rgba(0, 60, 113, 0.1) 0px 4px 16px, rgba(0, 60, 113, 0.05) 0px 8px 32px;
+  }
+  background-color:#001e50; 
+  padding-left: 1rem;
+}
+.nav-logo-middle-line {
+  color: black !important;
+  width: 5px !important;
+}

@@ -1,0 +1,70 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+- name: remove exists vault GPG key
+  shell: rm -rf /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+- name: dearmor vault GPG
+  shell: |
+    curl https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg  
+- name: Verify fingerprint
+  shell: |
+    gpg --no-default-keyring --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg --fingerprint  
+
+- name: add vault repository to apt
+  shell: |
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
+    https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+- name: install vault
+  apt:
+    name:
+    - "vault"
+    update_cache: true
+  register: aptrc
+  until: aptrc is success
+  retries: 10
+  delay: 5
+
+- name: Create Vault configuration directory
+  become: true
+  file:
+    path: /etc/vault.d
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Generate Vault configuration file
+  become: true
+  template:
+    src: vault.hcl.j2
+    dest: "{{ vault_conf_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Create Vault systemd service file
+  become: true
+  template:
+    src: vault.service.j2
+    dest: /etc/systemd/system/vault.service
+    owner: root
+    group: root
+    mode: "0644"
+
+# Need to start if not installed before
+- name: Try to Start Vault service if not started
+  become: true
+  systemd:
+    name: vault
+    state: started
+    enabled: yes
+    daemon_reload: true
+
+# - name: Start Vault service if not started
+#   shell: |
+#     systemctl start vault
+#   when: service_status.ActiveState != 'active'

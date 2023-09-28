@@ -1,0 +1,55 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+- block:
+  - name: Execute vault operator init command
+    become: true
+    ansible.builtin.command: vault operator init
+    register: vault_init_output
+
+  - name: Extract Unseal Keys
+    set_fact:
+      unseal_keys: "{{ vault_init_output.stdout_lines | select('match', '^Unseal Key') | map('split', ':') | map('last') | map('trim') | list  }}"
+
+  - name: Extract Initial Root Token
+    set_fact:
+      initial_root_token: "{{ vault_init_output.stdout_lines | select('match', '^Initial Root Token') | map('split', ':') | map('last') | map('trim') | first  }}"
+
+  - name: Execute vault operator unseal command
+    become: true
+    ansible.builtin.command: timeout 1 vault operator unseal "{{ item }}"
+    with_items: "{{ unseal_keys[0:3] }}"
+    when: unseal_keys | length >= 3
+
+  - name: Execute vault login via token
+    ansible.builtin.command: vault login "{{ initial_root_token }} "
+
+  - name: Remove vault token and address before adding
+    become: true
+    lineinfile:
+      dest: "/etc/profile"
+      state: absent
+      regexp: "export VAULT_ADDR=|export VAULT_TOKEN=|export VAULT_KEY1=|export VAULT_KEY2=|export VAULT_KEY3=|export VAULT_KEY4=|export VAULT_KEY5="
+
+  - name: Write vault token and address into /etc/profile
+    become: true
+    lineinfile:
+      dest: "/etc/profile"
+      line: "{{ item }}"
+    with_items:
+      - "export VAULT_ADDR=http://{{ TWDTHost }}:8200"
+      - 'export VAULT_TOKEN={{ initial_root_token }}'
+      - 'export VAULT_KEY1={{ unseal_keys[0] }}'
+      - 'export VAULT_KEY2={{ unseal_keys[1] }}'
+      - 'export VAULT_KEY3={{ unseal_keys[2] }}'
+      - 'export VAULT_KEY4={{ unseal_keys[3] }}'
+      - 'export VAULT_KEY5={{ unseal_keys[4] }}'
+
+  - name: Enables vault Key-Value (KV) secrets engine
+    ansible.builtin.command: vault secrets enable -path="{{ vault_mount_path | default('kv') }}" kv
+
+  environment:
+    VAULT_SKIP_VERIFY: "{{ vault_use_selfsigned_cert }}"
+    VAULT_ADDR: "http://{{ TWDTHost }}:8200"

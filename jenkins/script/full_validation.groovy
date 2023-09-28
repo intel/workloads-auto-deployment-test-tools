@@ -39,6 +39,7 @@ pipeline {
     booleanParam(name: 'tdx', defaultValue: '', description: '')
     booleanParam(name: 'snc4', defaultValue: '', description: '')
     string(name: 'filter_case', defaultValue: '', description: 'Regex string for ctest, if set, only run the cases which match this string. If start with !, then these cases will not run.')
+    string(name: 'exclude_case', defaultValue: '', description: 'if set, exclude the cases which match this string. These cases will not run..')
     string(name: 'cumulus_tags', defaultValue: '', description: 'use to tag cumulus run especially for release run. different tags are separated with comma. e.g: tag1,tag2')
     booleanParam(name: 'run_on_previous_hw', defaultValue: true, description: 'Run validation on the same HW configuration with previous.')
     string(name: 'cluster_file', defaultValue: 'cluster.yaml', description: 'To use different cluster.yaml file in artifactory')
@@ -47,11 +48,14 @@ pipeline {
     string(name: 'workload_test_config_yaml', defaultValue: '', description: 'low end or high end configuration file from workload folder, will ignore workload_params', trim: true)
     string(name: 'controller_ip', defaultValue: '', description: 'controller ip')
     string(name: 'worker_ip_list', defaultValue: '', description: 'worker ips, join with \',\' ')
+    booleanParam(name: 'k8s_reset', defaultValue: false, description: 'Reset k8s cluster, be cautious to enable it as it will only setup k8s with selected nodes.')
+    string(name: 'ctest_option', defaultValue: '', description: 'ctest.sh options like --loop to run the ctest commands sequentially.', trim: true)
   }
     stages {
         stage('download one source repo'){
             steps {
                 script {
+                    // println env.BUILD_URL
                     if (env.session != ''){
                         sf_revision = env.session.split('_')[-1]
                     }
@@ -168,13 +172,16 @@ pipeline {
 											[$class: "BooleanParameterValue", name: "run_on_previous_hw", value: "${run_on_previous_hw}"],
 											[$class: "StringParameterValue", name: "cumulus_tags", value: "${cumulus_tags}"],
 											[$class: "StringParameterValue", name: "filter_case", value: "${filter_case}"],
+											[$class: "StringParameterValue", name: "exclude_case", value: "${exclude_case}"],
 											[$class: "StringParameterValue", name: "customer", value: "${env.customer}"],
 											[$class: 'StringParameterValue', name: 'limited_node_number', value: "${limited_node_number}"],
 											[$class: 'StringParameterValue', name: 'cluster_file', value: "${cluster_file}"],
 											[$class: 'StringParameterValue', name: 'workload_params', value: "${workload_params}"],
 											[$class: 'StringParameterValue', name: 'workload_test_config_yaml', value: "${workload_test_config_yaml}"],
 											[$class: 'StringParameterValue', name: 'controller_ip', value: "${controller_ip}"],
-											[$class: 'StringParameterValue', name: 'worker_ip_list', value: "${worker_ip_list}"]
+											[$class: 'StringParameterValue', name: 'worker_ip_list', value: "${worker_ip_list}"],
+                                            [$class: 'BooleanParameterValue', name: 'k8s_reset', value: "${k8s_reset}"],
+											[$class: "StringParameterValue", name: "ctest_option", value: "${ctest_option}"],
 										]
 
 									}

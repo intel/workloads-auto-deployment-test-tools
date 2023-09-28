@@ -1,0 +1,107 @@
+#
+# Apache v2 license
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+- name: Check if certificate exists
+  stat:
+    path: "{{ playbook_dir }}/../cert/cert.pem"
+  register: cert
+
+- name: Failed if cert file not exists
+  fail:
+    msg: "Cert.pem must exists in setup/cert directory, please generate manually as the user guide introduced."
+  when: not cert.stat.exists
+
+- name: get short hostname
+  command: hostname -s
+  register: hostname
+
+- name: check if hostname conforms to RFC1178
+  fail:
+    msg: "Hostname {{ hostname.stdout }} not conformant to RFC1178."
+  when: (hostname.stdout | regex_findall('[^a-z0-9-]') | length > 0)
+
+- name: get ~/.netrc permission
+  stat:
+    path: ~/.netrc
+  register: netrc
+
+- name: fail if the ~/.netrc permission is too permissive
+  fail:
+    msg: "~/.netrc file is too permissive"
+  when:
+    - netrc.stat.exists
+    - netrc.stat.mode != '0400'
+    - netrc.stat.mode != '0600'
+
+- name: check OS
+  shell:
+    cmd: ". /etc/os-release; echo $ID_LIKE"
+    executable: /bin/bash
+  register: os
+
+# Try to apt update or yum update to verify the source.
+# - name: check apt-get/yum update functions - run apt update or yum update manually if failed
+#   action: "{{ (os.stdout == 'debian') | ternary('apt','yum') }} update_cache=true"
+#   register: pkgrc
+#   until: pkgrc is success
+#   delay: 5
+#   retries: 3
+#   become: true
+
+- name: Check required packages
+  shell: command -v {{ item.value }}
+  with_list:
+    # - {"key" : "curl", "value": "curl"}
+    # - {"key" : "make", "value": "make"}
+    # - {"key" : "cmake", "value": "cmake"}
+    # - {"key" : "m4",   "value":"m4"}
+    # - {"key" : "gawk", "value": "gawk"}
+    - {"key" : "python3", "value" :"python3"}
+    - {"key" : "python3-pip", "value": "pip3"}
+    # - {"key" : "gnupg", "value": "gpg"}
+    # - {"key" : "ca-certificates", "value": "update-ca-certificates"}
+    # - {"key" : "unzip", "value": "unzip"}
+  register: package_check_results
+  ignore_errors: true
+
+- name: Install required packages
+  become: true
+  package:
+    name: "{{ item.item.key }}"
+    state: present
+  with_list:
+    "{{ package_check_results.results }}"
+  when: item.rc
+
+- name: Try to install require python package
+  pip:
+    name: 
+      - requests
+      - PyYAML
+      - paramiko
+# - name: Generate certificate files
+#   become: true
+#   shell: |
+#     cd {{ playbook_dir }}/../cert/
+#     openssl req -x509 -newkey rsa:2048 -nodes \
+#             -keyout {{ TWDTHost }}:5000.key \
+#             -out {{ TWDTHost }}:5000.crt \
+#             -subj "/CN={{ TWDTHost }}" \
+#             --addext "subjectAltName = IP:{{ TWDTHost }}" &&
+#     chmod 644 {{ TWDTHost }}:5000.key {{ TWDTHost }}:5000.crt
+#   when: not cert.stat.exists
+
+# - name: Create alias of cert file - key
+#   become: true
+#   shell:
+#     ln -f {{ playbook_dir }}/../cert/{{ TWDTHost }}:5000.key {{ playbook_dir }}/../cert/key.pem
+#   when: not cert.stat.exists
+
+# - name: Create alias of cert file - crt
+#   become: true
+#   shell:
+#     ln -f {{ playbook_dir }}/../cert/{{ TWDTHost }}:5000.crt {{ playbook_dir }}/../cert/cert.pem
+#   when: not cert.stat.exists
+
