@@ -67,7 +67,7 @@ ruamel.yaml==0.17.21
 ruamel.yaml.clib==0.2.6
 s3transfer==0.5.2
 six==1.16.0
-sqlparse==0.4.4
+sqlparse==0.5.0
 tablib==3.2.1
 ua-parser==0.15.0
 uritemplate==4.1.1
