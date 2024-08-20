@@ -32,7 +32,7 @@ google-auth==2.6.0
 google-auth-httplib2==0.1.0
 googleapis-common-protos==1.55.0
 httplib2==0.20.4
-idna==3.3
+idna==3.7
 inflection==0.5.1
 itypes==1.2.0
 jenkins==1.0.2
